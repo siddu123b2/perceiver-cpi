@@ -67,7 +67,8 @@ Raw CSVs are in `reference/data/`. Their header is `compound_iso_smiles,target_s
 | Unique compounds | 68 | 2,068 | 1,423 |
 | Unique sequences | 379 (paper lists 442 targets) | 229 | 170 |
 | Paper row count (Table 1) | 30,056 | 117,657 | 35,259 |
-| Known issues | 4,284 repeated smiles+sequence rows, 546 with conflicting labels; ~70% of labels exactly 5; 68 rows contain `X` | 218 exact duplicates; 597 repeated pairs, 288 with conflicting labels; ~72% of labels in 11.1–12 | Clean |
+| Known issues | 4,284 surplus rows from 1,224 repeated smiles+sequence pairs (2,435 are exact duplicates), 546 pairs with conflicting labels; ~70% of labels exactly 5; 68 rows contain `X` | 218 exact duplicates; 597 surplus rows from 473 repeated pairs, 288 pairs with conflicting labels; ~72% of labels in 11.1–12 | Clean |
+| Cleaned file (Phase 2) | `data/davis.csv`, 30,056 rows (unchanged) | `data/kiba.csv`, **117,657 rows = paper** | `data/metz.csv`, 35,259 rows (unchanged) |
 
 Davis has 379 sequences but 442 targets because it lists kinase variants (mutants, phosphorylated forms) as separate targets, and some of them share an identical sequence. This is not corruption.
 
@@ -79,6 +80,13 @@ Data rules:
 - **Never merge the three datasets, and never compare or average scores across them.** Each uses a different scale.
 - The model does not use protein names, only smiles, sequence and label.
 - Paper data source: Davis and KIBA came from DeepPurpose (the repo's split script reads from a folder named `kiba_davis_deeppurpose`).
+
+Phase 2 findings (2026-10-29, details in `data/prep_report.md`):
+- 0 invalid SMILES, 0 unknown amino-acid letters, 0 missing values. No molecule appears under two different SMILES strings, so SMILES are kept exactly as given (not canonicalised).
+- `X` is in TAPE's UniRep vocabulary (token 23, shared with B/Z/J), so the 68 Davis rows with `X` are kept unchanged.
+- **Only the first 499 residues are used.** TAPE adds start and stop tokens and the model keeps 500 tokens, so longer proteins lose their tail. That's 267/379 Davis, 148/229 KIBA and 116/170 Metz sequences. This is the paper's design, not changed.
+- **Label noise floor:** Davis has identical pairs with different labels, so no model can get MSE below **0.032** on Davis. KIBA is 0.000 after merging, Metz 0.000.
+- Rebuild: `data/prepare_datasets.py`. Test: `data/check_datasets.py --with-model` (35 checks, plus a 1-epoch training run on each file).
 
 ## 4. Splits (no data leakage)
 
@@ -123,7 +131,7 @@ Every phase follows this loop: show a short plan → wait for OK → do it → r
 |---|---|---|
 | 0 | Setup: folders, git, CLAUDE.md, machine check, env choice | done (2026-10-29) |
 | 1 | Smoke test: unzip repo to `model_2d/`, install deps, train on `toy_dataset`, run `predict.py` | done (2026-10-29), see `experiments/phase1_smoke/` |
-| 2 | Data prep (§3 rules) → `data/davis.csv`, `data/kiba.csv`, `data/metz.csv`; before/after table; TAPE handles `X` | todo |
+| 2 | Data prep (§3 rules) → `data/davis.csv`, `data/kiba.csv`, `data/metz.csv`; before/after table; TAPE handles `X` | done (2026-10-29), see `data/prep_report.md` |
 | 3 | Splits (§4) + leakage checks | todo |
 | 4 | Baseline: reproduce the paper (MSE, CI, Pearson, Spearman, rm² as mean ± std over 5 folds) | todo |
 | 5 | Improve accuracy, one change at a time, using validation only; log in `experiments/results_log.md` | todo |

@@ -4,6 +4,7 @@ reference/*.pdf
 
 # Generated data and model weights: rebuilt from scripts with fixed seeds
 data/**/*.csv
+!data/logs/*.csv
 *.pt
 *.pth
 *.ckpt

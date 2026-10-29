@@ -2,7 +2,7 @@
 
 Predicts how strongly a compound (SMILES) binds to a protein (amino-acid sequence), using the Perceiver CPI model (Nguyen et al., *Bioinformatics* 2023) trained on one of three benchmark datasets: Davis, KIBA or Metz. Each dataset uses its own scale, so scores from different models can't be compared with each other.
 
-> **Status:** Phase 1 (smoke test) is done. The model trains and predicts on the repo's toy dataset. Real data comes next. See [CLAUDE.md](CLAUDE.md) for the full plan and phase status.
+> **Status:** Phase 2 (data cleaning) is done. The model code runs, and the three datasets are cleaned. Train/test splits come next. See [CLAUDE.md](CLAUDE.md) for the full plan and phase status.
 
 **Requirements so far:** Windows, Git, Python 3.12 (`py -3.12`). Model training runs on Google Colab, because this machine has no NVIDIA GPU.
 
@@ -27,6 +27,20 @@ The raw CSVs are not stored in git because they're too large. Put them in `refer
 | `davis.csv` | 30,056 | pKd |
 | `kiba.csv` | 118,254 | KIBA score |
 | `metz.csv` | 35,259 | pKi |
+
+Then build the cleaned files in `data/` (~20 s) and check them:
+
+```
+.venv\Scripts\python.exe data\prepare_datasets.py
+.venv\Scripts\python.exe data\check_datasets.py --with-model
+```
+
+The cleaned files have the columns `smiles,sequence,label`.
+- **Davis:** 30,056 rows, unchanged.
+- **KIBA:** 117,657 rows, after dropping duplicates and averaging repeated pairs. This matches the paper.
+- **Metz:** 35,259 rows, unchanged.
+
+What changed and why: [data/prep_report.md](data/prep_report.md). Every merged KIBA pair is listed in [data/logs/kiba_merged_pairs.csv](data/logs/kiba_merged_pairs.csv).
 
 ## Setup (local, CPU)
 
