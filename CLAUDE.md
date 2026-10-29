@@ -9,7 +9,7 @@ A university project. The user enters:
 - a **protein** as an amino-acid sequence (e.g. `MKKFFDSRREQ...`)
 - a **model**: Davis, KIBA or Metz
 
-The app returns a **binding-affinity score**, a **± confidence** (spread across the ensemble), and a plain-language **band** (strong / moderate / weak binder).
+The app returns a **binding-affinity score**, a **± confidence** (spread of MC-dropout predictions; see the Phase 4 decision in §6), and a plain-language **band** (strong / moderate / weak binder).
 
 - **Current scope:** the 2D prediction model, a basic FastAPI backend and a basic React + Vite frontend.
 - **Not now:** the 3D branch (structure prediction, docking, 3D viewer). Leave clearly marked placeholders for it in the frontend and backend (`POST /predict-3d` returns "not implemented yet"; UI panel "3D binding pose — coming in the next phase"). Do not build it.
@@ -147,14 +147,31 @@ Every phase follows this loop: show a short plan → wait for OK → do it → r
 | 1 | Smoke test: unzip repo to `model_2d/`, install deps, train on `toy_dataset`, run `predict.py` | done (2026-10-29), see `experiments/phase1_smoke/` |
 | 2 | Data prep (§3 rules) → `data/davis.csv`, `data/kiba.csv`, `data/metz.csv`; before/after table; TAPE handles `X` | done (2026-10-29), see `data/prep_report.md` |
 | 3 | Splits (§4) + leakage checks | done (2026-10-29), see `data/splits/summary.md`. 90 files, 340 leakage checks pass, checker caught 6/6 planted breaks |
-| 4 | Baseline: reproduce the paper (MSE, CI, Pearson, Spearman, rm² as mean ± std over 5 folds) | todo |
+| 4 | Baseline, **reduced scope** (user decision 2026-10-29): ONE model per dataset (Davis, KIBA, Metz), trained on novel-pair **fold 0** on a borrowed RTX laptop. Report MSE, CI, Pearson, Spearman, rm² next to the paper's | **in progress**: resume change, MC dropout and the GPU bundle are built. **Next:** the user trains on the RTX laptop, copies `results_to_copy.zip` back into `experiments/phase4_baseline/`, then Claude evaluates (metrics, MC-dropout check, `results.md`) |
 | 5 | Improve accuracy, one change at a time, using validation only; log in `experiments/results_log.md` | todo |
 | 6 | Model registry (`models/<dataset>/` + `model_card.md`), `model_2d/predict_api.py`, `MODEL_SELECTION.md` | todo |
 | 7 | Backend: `/health`, `/models`, `/predict`, `/history`, `/predict-3d` placeholder; pytest | todo |
 | 8 | Frontend: one page (navy background, teal inputs, orange prediction); README end to end | todo |
 
 Phase details from the spec:
-- **Phase 4:** estimate run time first. Start with novel pair on all three datasets, then the other settings.
+- **Phase 4 decision (user, 2026-10-29): compute-limited baseline.**
+  - Train **one model per dataset** (no ensembles) on **novel-pair fold 0** only. The other folds and settings (novel compound / protein / hard) are deferred; their splits are ready in `data/splits/`.
+  - **Why:** the full paper protocol (5 folds × ensemble of 3 × 150 epochs × 5 setting-datasets) is ~300 M training row-passes, roughly 45 days on this laptop's CPU and days of GPU time.
+  - **± confidence = MC dropout** instead of ensemble spread. Predict the same input N times with dropout left on, and use the standard deviation. Dropout (0.1) is already in the model, so no extra training is needed.
+  - **Reporting:** put our fold-0 test MSE and CI next to the paper's 5-fold mean ± std, and state clearly: "single model, single fold, so the comparison is not exact". The paper's fold-to-fold std for novel pair is small (±0.010–0.016 MSE), so one fold is a fair indicator, but the missing ensemble may cost some accuracy.
+  - **Where (changed 2026-10-29): a borrowed laptop with an NVIDIA RTX 4050/3050**, not Colab.
+    - Build the bundle with `experiments/phase4_baseline/make_bundle.py` → `perceiver_gpu_bundle.zip` (~38 MB). It holds the code, the 9 fold-0 split files and `manifest.json`.
+    - The beginner instructions are `gpu_bundle/RUN_ON_GPU_LAPTOP.md`. The scripts are `check_setup.py` (checks + timing), `train_all.py` (Davis → Metz → KIBA, with `--resume`) and `pack_results.py` (→ `results_to_copy.zip`).
+    - The results go back into `experiments/phase4_baseline/runs/<dataset>/`.
+    - **GPU environment:** `model_2d/requirements-gpu.txt` = `torch==2.15.0+cu132` + `requirements.txt`. This needs an NVIDIA driver showing "CUDA Version: 13.0" or higher. If the driver can't be updated, the fallback is `torch==2.14.1` from the cu126 index; the report must mention it if used.
+  - **Training settings (D1–D3, user approved 2026-10-29).** The paper quotes are in the Phase 4 plan.
+    - **D3:** use the repo README settings: `--epochs 150 --batch_size 50 --dropout 0.1 --aggregation mean`, code defaults for the rest, `--seed 0 --pytorch_seed 0`, `--ensemble_size 1`. The paper's Bayesian-optimised values are not published in the main text.
+    - **D1, KIBA:** `--tau 11.1 12 --alpha 0.5 --beta 5`. The paper says 71.96% of KIBA labels lie in 11.1–12, and the weighting uses the same 10× ratio as Davis.
+    - **D2, Metz:** `--alpha 0.5 --beta 0.5`, i.e. the same weight for every row, which means no weighting. The paper calls Metz "well-balanced". `alpha` stays 0.5, so the CNN residual scale is the same as for Davis and KIBA.
+    - **Davis:** `--tau 0 5 --alpha 0.5 --beta 5` (the paper's example; also the code defaults).
+  - **Resume:** change 4 in `model_2d/CHANGES.md` (approved). **MC dropout:** `model_2d/mc_dropout.py`. The score is the normal prediction; the ± is the std of 30 dropout-on predictions (seed 0).
+  - **Estimated time on the RTX laptop:** ~10–16 h in total (Davis ~2 h, Metz ~2.5 h, KIBA ~8 h), based on the CPU profile. `check_setup.py` measures the real speed.
+  - **Measured on CPU (Phase 3):** 1 epoch of Davis fold 0 = 3 min 50 s. Profile: ~80% of the time is the network (GPU helps), ~20% is CPU-side batch preparation (GPU doesn't).
 - **Phase 5 ideas** (try one at a time, judge on validation only, log in `experiments/results_log.md`):
   - **Protein truncation.** The model sees only the first 499 residues. Truncated: **Davis 267/379, KIBA 148/229, Metz 116/170** sequences. For kinases, the inhibitor binding site is in the kinase domain, which often lies beyond residue 499.
     - First measure how many truncated proteins actually lose part or all of their kinase domain. This needs domain positions from UniProt/Pfam; ask before downloading.

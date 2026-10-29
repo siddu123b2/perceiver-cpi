@@ -84,6 +84,22 @@ From `model_2d\`, train a tiny model (~1 min on CPU), then predict with it:
 
 Expected results are in [experiments/phase1_smoke/README.md](experiments/phase1_smoke/README.md).
 
-## Training and running the app
+## Training the baseline (Phase 4, on an NVIDIA laptop)
 
-Not written yet. These sections are added in Phases 4, 7 and 8.
+Training needs an NVIDIA GPU. We train **one model per dataset** on novel-pair fold 0 (see CLAUDE.md §6 for why).
+
+1. On this laptop, build the bundle (~38 MB):
+
+   ```
+   .venv\Scripts\python.exe experiments\phase4_baseline\make_bundle.py
+   ```
+
+2. Copy `experiments\phase4_baseline\perceiver_gpu_bundle.zip` to the GPU laptop.
+3. Follow [RUN_ON_GPU_LAPTOP.md](experiments/phase4_baseline/gpu_bundle/RUN_ON_GPU_LAPTOP.md), which is also inside the zip. It covers installing Python and the driver, checking the GPU, training Davis → Metz → KIBA (resumable), and copying the results back.
+4. The results land in `experiments\phase4_baseline\runs\`.
+
+For predictions with a ± (MC dropout), see [model_2d/mc_dropout.py](model_2d/mc_dropout.py).
+
+## Running the app
+
+Not written yet. This section is added in Phases 7 and 8.

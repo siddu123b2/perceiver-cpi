@@ -1,6 +1,7 @@
 import json
 from logging import Logger
 import os
+import random
 from typing import Dict, List
 
 import numpy as np
@@ -22,6 +23,26 @@ from chemprop.utils import build_optimizer, build_lr_scheduler, get_loss_func, l
     save_checkpoint, save_smiles_splits, load_frzn_model
 from .lamb import Lamb
 from lifelines.utils import concordance_index
+
+RESUME_FILE_NAME = 'resume.pt'
+
+
+def get_rng_states(train_data_loader: MoleculeDataLoader) -> dict:
+    """Change 4: every random-number generator that training uses, so a resumed run continues identically."""
+    return {'python': random.getstate(), 'numpy': np.random.get_state(), 'torch': torch.get_rng_state(),
+            'cuda': torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
+            'sampler': train_data_loader._sampler._random.getstate()}
+
+
+def set_rng_states(states: dict, train_data_loader: MoleculeDataLoader) -> None:
+    random.setstate(states['python'])
+    np.random.set_state(states['numpy'])
+    torch.set_rng_state(states['torch'])
+    if states['cuda'] is not None and torch.cuda.is_available():
+        torch.cuda.set_rng_state_all(states['cuda'])
+    train_data_loader._sampler._random.setstate(states['sampler'])
+
+
 def run_training(args: TrainArgs,
                  data: MoleculeDataset,
                  logger: Logger = None,
@@ -220,9 +241,14 @@ def run_training(args: TrainArgs,
             debug('Moving model to cuda')
         model = model.to(args.device)
 
+        # Change 4 (CHANGES.md): with --resume, continue from <save_dir>/resume.pt if it exists
+        resume_path = os.path.join(save_dir, RESUME_FILE_NAME)
+        resuming = args.resume and os.path.exists(resume_path)
+
         # Ensure that model is saved in correct location for evaluation if 0 epochs
-        save_checkpoint(os.path.join(save_dir, MODEL_FILE_NAME), model, scaler,
-                        features_scaler, atom_descriptor_scaler, bond_feature_scaler, args)
+        if not resuming:
+            save_checkpoint(os.path.join(save_dir, MODEL_FILE_NAME), model, scaler,
+                            features_scaler, atom_descriptor_scaler, bond_feature_scaler, args)
 
 
         # # Learning rate schedulers
@@ -231,7 +257,21 @@ def run_training(args: TrainArgs,
         # Run training
         best_score = float('inf') if args.minimize_score else -float('inf')
         best_epoch, n_iter = 0, 0
-        for epoch in trange(args.epochs):
+        best_state, start_epoch = None, 0
+        if resuming:
+            state = torch.load(resume_path, map_location=args.device, weights_only=False)
+            # Rewrite the best model first, in case a cut-off left model.pt half-written
+            model.load_state_dict(state['best_model'] if state['best_model'] is not None else state['model'])
+            save_checkpoint(os.path.join(save_dir, MODEL_FILE_NAME), model, scaler,
+                            features_scaler, atom_descriptor_scaler, bond_feature_scaler, args)
+            model.load_state_dict(state['model'])
+            optimizer.load_state_dict(state['optimizer'])
+            scheduler.load_state_dict(state['scheduler'])
+            best_score, best_epoch, n_iter = state['best_score'], state['best_epoch'], state['n_iter']
+            best_state, start_epoch = state['best_model'], state['epoch'] + 1
+            set_rng_states(state['rng'], train_data_loader)
+            info(f'Resuming model {model_idx} after epoch {state["epoch"]} (best so far: epoch {best_epoch})')
+        for epoch in trange(start_epoch, args.epochs, initial=start_epoch, total=args.epochs):
             debug(f'Epoch {epoch}')
 
             n_iter = train(
@@ -278,6 +318,16 @@ def run_training(args: TrainArgs,
                 best_score, best_epoch = avg_val_score, epoch
                 save_checkpoint(os.path.join(save_dir, MODEL_FILE_NAME), model, scaler, features_scaler,
                                 atom_descriptor_scaler, bond_feature_scaler, args)
+                if args.resume:
+                    best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+
+            if args.resume:
+                # Write to a temporary file, then swap it in, so a cut-off never leaves a broken resume file
+                torch.save({'epoch': epoch, 'model': model.state_dict(), 'optimizer': optimizer.state_dict(),
+                            'scheduler': scheduler.state_dict(), 'best_model': best_state,
+                            'best_score': best_score, 'best_epoch': best_epoch, 'n_iter': n_iter,
+                            'rng': get_rng_states(train_data_loader)}, resume_path + '.tmp')
+                os.replace(resume_path + '.tmp', resume_path)
 
         # Evaluate on test set using model with best validation score
         info(f'Model {model_idx} best validation {args.metric} = {best_score:.6f} on epoch {best_epoch}')

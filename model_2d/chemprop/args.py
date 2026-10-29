@@ -362,6 +362,11 @@ class TrainArgs(CommonArgs):
     # Training arguments
     epochs: int = 30
     """Number of epochs to run."""
+    resume: bool = False
+    """
+    Save a resume file after every epoch and, if one exists, continue from it
+    (change 4 in model_2d/CHANGES.md; added so interrupted GPU runs can carry on).
+    """
     warmup_epochs: float = 2.0
     """
     Number of epochs during which learning rate increases linearly from :code:`init_lr` to :code:`max_lr`.

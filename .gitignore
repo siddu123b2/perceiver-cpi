@@ -30,3 +30,6 @@ frontend/dist/
 Thumbs.db
 .DS_Store
 .vscode/
+
+# Phase 4 transfer zips (rebuilt by experiments/phase4_baseline/make_bundle.py / pack_results.py)
+experiments/**/*.zip

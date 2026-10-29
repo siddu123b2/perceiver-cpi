@@ -52,6 +52,49 @@ Search the code for `compat fix` to find them.
 
 `np.float` was only ever another name for Python's `float`; NumPy 1.24 removed the alias. **Effect on results:** none. (This code is only used for scaffold splits, which we don't use.)
 
+## Other changes (not compatibility fixes)
+
+### Change 4: `--resume` for interrupted training (2026-10-29, approved)
+
+**Why.** Phase 4 trains for hours on a borrowed GPU laptop. The original code cannot continue a run that was cut off, so a restart would lose all progress.
+
+| File | Change |
+|---|---|
+| `chemprop/args.py` | new option `resume: bool = False` in `TrainArgs` |
+| `chemprop/train/run_training.py` | new `get_rng_states` / `set_rng_states`; resume logic in the epoch loop |
+
+**What it does.** With `--resume`, after every epoch the code writes `<save_dir>/model_<i>/resume.pt`. That file holds:
+- the model weights;
+- the optimiser state (LAMB's running averages);
+- the learning-rate schedule position;
+- the best validation score and its epoch;
+- a copy of the best weights;
+- the state of every random-number generator (Python, NumPy, PyTorch CPU/GPU, and the data shuffler).
+
+It writes to a temporary file first and then swaps it in, so a cut-off never leaves a broken resume file. When a run starts and finds `resume.pt`, it:
+1. rewrites `model.pt` from the saved best weights, in case the cut-off happened while `model.pt` was being written;
+2. restores everything else;
+3. continues from the next epoch.
+
+Without `--resume`, nothing changes.
+
+**Effect on results:** none. Tested on CPU with a 2,000-row Davis sample (2026-10-29).
+
+Multi-threaded (normal) runs, compared with the original code's predictions:
+- without `--resume`: max difference 3.8e-6;
+- with `--resume`: max difference 3.8e-6;
+- 6 epochs straight vs 6 epochs **killed after epoch 2 and resumed**: max difference 3.8e-6.
+
+That 3.8e-6 is ordinary run-to-run float noise from parallel CPU maths. Two runs that *should* be identical (with and without saving resume files) differ by 4.3e-6.
+
+Single-threaded (`OMP_NUM_THREADS=1`, which makes CPU maths exactly repeatable):
+- killed-and-resumed vs straight: **max difference 0.0**, bit-for-bit identical;
+- re-running a finished folder skips training and gives the same predictions (difference 0.0).
+
+### Not a change: `mc_dropout.py` (our own file)
+
+`model_2d/mc_dropout.py` adds MC-dropout predictions: the normal score, plus a ± from 30 predictions made with dropout on. It only *uses* the official code (`load_checkpoint`, `predict`) and changes none of it.
+
 ## Known warnings we leave alone (not changes)
 
 - **RDKit `DEPRECATION WARNING: please use MorganGenerator`.** The old Morgan fingerprint function still works. We keep it so the fingerprints are exactly the original ones.
