@@ -1,0 +1,4 @@
+# Normalise line endings in git; shell scripts must stay LF so they run on Colab/Linux.
+* text=auto
+*.sh text eol=lf
+*.zip binary
