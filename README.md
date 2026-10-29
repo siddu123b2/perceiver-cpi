@@ -2,7 +2,7 @@
 
 Predicts how strongly a compound (SMILES) binds to a protein (amino-acid sequence), using the Perceiver CPI model (Nguyen et al., *Bioinformatics* 2023) trained on one of three benchmark datasets: Davis, KIBA or Metz. Each dataset uses its own scale, so scores from different models can't be compared with each other.
 
-> **Status:** Phase 2 (data cleaning) is done. The model code runs, and the three datasets are cleaned. Train/test splits come next. See [CLAUDE.md](CLAUDE.md) for the full plan and phase status.
+> **Status:** Phase 3 (splits) is done. The model code runs, the three datasets are cleaned, and the 5-fold train/val/test splits are built and checked for leakage. Training the baseline (on Google Colab) comes next. See [CLAUDE.md](CLAUDE.md) for the full plan and phase status.
 
 **Requirements so far:** Windows, Git, Python 3.12 (`py -3.12`). Model training runs on Google Colab, because this machine has no NVIDIA GPU.
 
@@ -41,6 +41,22 @@ The cleaned files have the columns `smiles,sequence,label`.
 - **Metz:** 35,259 rows, unchanged.
 
 What changed and why: [data/prep_report.md](data/prep_report.md). Every merged KIBA pair is listed in [data/logs/kiba_merged_pairs.csv](data/logs/kiba_merged_pairs.csv).
+
+## Train/test splits
+
+Build the 5-fold splits the paper uses, then check them for leakage:
+
+```
+.venv\Scripts\python.exe data\make_splits.py
+.venv\Scripts\python.exe data\check_splits.py --with-model
+```
+
+- **Build time:** about 36 s, using the saved protein-similarity file. The checks take about 7 min, mostly re-aligning proteins and a 1-epoch training run.
+- **Settings:**
+  - Davis gets novel pair, novel compound, novel protein and novel-hard pair.
+  - KIBA and Metz get novel pair only, as in the paper.
+- **Where the files go:** `data/splits/<dataset>/<setting>/fold{0-4}_{train,val,test}.csv`, about 800 MB, not in git.
+- **Fold sizes:** see [data/splits/summary.md](data/splits/summary.md). The decisions behind the splits are in CLAUDE.md §4.
 
 ## Setup (local, CPU)
 

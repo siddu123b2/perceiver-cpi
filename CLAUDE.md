@@ -105,6 +105,20 @@ Each setting has 5 folds. Each fold's validation set is taken at random from tha
 - A script must verify each setting's rules, e.g. that no test compound appears in train for novel compound.
 - **The test set is used only for final reporting, never for tuning.**
 
+Phase 3 decisions (user approved 2026-10-29). Each is a point the paper leaves unclear; the paper quotes and the rejected options are in the Phase 3 plan:
+- **Which settings.** Davis gets all four. KIBA and Metz get novel pair only (paper: *"only novel pair setting was applied on the KIBA and Metz datasets"*).
+- **Folds.** Copy the repo: sort the unique SMILES / sequences alphabetically, cut them into 5 consecutive blocks of 20%, and fold k tests block k. No randomness. Chosen for comparability.
+- **Novel pair.** Rows mixing a test compound with a training protein (or the reverse) are unused. The definition forces this, and the repo does the same.
+- **Validation.** A random 20% of each fold's *training pairs*, with seed = fold number. Identical smiles+sequence rows stay together (user rule: the same input is never on two sides, in any setting). Validation contains compounds and proteins seen in training, as in the paper.
+- **Novel-hard pair.** Start from the novel-pair fold (same train/val). Keep a test row only if its compound's highest Tanimoto (Morgan r2, 2048 bits) to any training compound is < 0.3 **and** its protein's highest identity to any training protein is < 0.3.
+- **Protein identity.** Global alignment of the first 500 residues (BLOSUM62, gap open 10, extend 0.5, free end gaps = EMBOSS needle defaults); identical positions ÷ 500.
+- Code: `data/make_splits.py` (the repo's `prepare_data_for_setting.py` is kept untouched for reference). Checks: `data/check_splits.py`. Fold sizes: `data/splits/summary.md`.
+
+Phase 3 results (2026-10-29):
+- Split files: `data/splits/<dataset>/<setting>/fold{k}_{train,val,test}.csv` (802 MB, git-ignored). Rebuild with `make_splits.py`: ~6 min the first time, 36 s with the committed protein-identity cache (`davis_protein_identity.npz`). Two builds were byte-identical. `manifest.json` (committed) holds an MD5 for every file, so a Colab rebuild can be verified.
+- Test rows per fold: Davis novel pair ~1,100–1,440; novel compound ~5,300–6,200; novel protein ~5,300–7,000; **novel-hard 112–276** (5–12 of 14 compounds and 14–24 of 76 proteins pass the 0.3 cut-off); KIBA novel pair ~3,400–5,800; Metz novel pair ~1,250–1,600. Novel pair leaves ~32% of rows unused per fold.
+- **Phase 4 timing:** 1 epoch on Davis novel-pair fold 0 (15,641 training rows) took **3 min 50 s on this laptop's CPU**. A paper-style run (150 epochs × ensemble of 3) would take days on CPU, so Phase 4 must run on Colab GPU. Test MSE after 1 epoch: 1.087 (paper, fully trained: 0.463).
+
 ## 5. Folder layout
 
 The project root is `C:\projects\Perceiver_cpi\` (this folder).
@@ -132,7 +146,7 @@ Every phase follows this loop: show a short plan → wait for OK → do it → r
 | 0 | Setup: folders, git, CLAUDE.md, machine check, env choice | done (2026-10-29) |
 | 1 | Smoke test: unzip repo to `model_2d/`, install deps, train on `toy_dataset`, run `predict.py` | done (2026-10-29), see `experiments/phase1_smoke/` |
 | 2 | Data prep (§3 rules) → `data/davis.csv`, `data/kiba.csv`, `data/metz.csv`; before/after table; TAPE handles `X` | done (2026-10-29), see `data/prep_report.md` |
-| 3 | Splits (§4) + leakage checks | todo |
+| 3 | Splits (§4) + leakage checks | done (2026-10-29), see `data/splits/summary.md`. 90 files, 340 leakage checks pass, checker caught 6/6 planted breaks |
 | 4 | Baseline: reproduce the paper (MSE, CI, Pearson, Spearman, rm² as mean ± std over 5 folds) | todo |
 | 5 | Improve accuracy, one change at a time, using validation only; log in `experiments/results_log.md` | todo |
 | 6 | Model registry (`models/<dataset>/` + `model_card.md`), `model_2d/predict_api.py`, `MODEL_SELECTION.md` | todo |
@@ -141,6 +155,10 @@ Every phase follows this loop: show a short plan → wait for OK → do it → r
 
 Phase details from the spec:
 - **Phase 4:** estimate run time first. Start with novel pair on all three datasets, then the other settings.
+- **Phase 5 ideas** (try one at a time, judge on validation only, log in `experiments/results_log.md`):
+  - **Protein truncation.** The model sees only the first 499 residues. Truncated: **Davis 267/379, KIBA 148/229, Metz 116/170** sequences. For kinases, the inhibitor binding site is in the kinase domain, which often lies beyond residue 499.
+    - First measure how many truncated proteins actually lose part or all of their kinase domain. This needs domain positions from UniProt/Pfam; ask before downloading.
+    - Then test (a) feeding the kinase-domain region instead of the first 499 residues, and (b) a longer max length (`--sequence_length`). Note: (b) changes the model's input size and memory use.
 - **Phase 6:** `predict(smiles, sequence, model)` returns `score, unit, confidence, band, model`.
   - Load models once and reuse them.
   - Band thresholds: use commonly used values per scale and cite the source of each. If there is no standard, state the assumption and make it configurable.
@@ -153,6 +171,7 @@ Phase details from the spec:
 - **Ask before** installing large packages, deleting files, or pushing to a remote.
 - Fix random seeds and save every config so results can be reproduced.
 - Be honest: if a result is worse than the paper, say so and explain why.
+- **Unclear paper details** (user rule, 2026-10-29): for every decision the paper leaves unclear, quote what the paper says, give 2 options with a recommendation, and prefer whatever keeps our numbers comparable with the paper. Wait for the user's choice.
 - Never merge datasets, and never compare or average scores across Davis, KIBA and Metz.
 - Keep `CLAUDE.md` and `README.md` up to date as the project grows.
 

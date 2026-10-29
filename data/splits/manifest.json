@@ -1,0 +1,362 @@
+{
+ "davis/novel_pair/fold0_train.csv": {
+  "rows": 15641,
+  "md5": "09e50c3a7df343c56dfb66c63cc397d8"
+ },
+ "davis/novel_pair/fold0_val.csv": {
+  "rows": 3799,
+  "md5": "17bc5ad8c1aaead14075ee9ffc00e4d0"
+ },
+ "davis/novel_pair/fold0_test.csv": {
+  "rows": 1148,
+  "md5": "fd441de31124bc11ba370095e462b2c9"
+ },
+ "davis/novel_pair/fold1_train.csv": {
+  "rows": 15732,
+  "md5": "bd8c88b5d5e079bd4781750be1d8d280"
+ },
+ "davis/novel_pair/fold1_val.csv": {
+  "rows": 3924,
+  "md5": "a73cf2de60c9e96f71fd3325c60f4718"
+ },
+ "davis/novel_pair/fold1_test.csv": {
+  "rows": 1092,
+  "md5": "a1a294f95256f9221052a4d8fcf902af"
+ },
+ "davis/novel_pair/fold2_train.csv": {
+  "rows": 15588,
+  "md5": "7814b7482070593aa8d46c0c197a6b2d"
+ },
+ "davis/novel_pair/fold2_val.csv": {
+  "rows": 3960,
+  "md5": "564f9accdc9d99ac2bdcc99d05306874"
+ },
+ "davis/novel_pair/fold2_test.csv": {
+  "rows": 1120,
+  "md5": "9902e53ff79851dcdaeaef8ac954b63c"
+ },
+ "davis/novel_pair/fold3_train.csv": {
+  "rows": 14548,
+  "md5": "aaadc37843afda2a8e9ece6d3ee61666"
+ },
+ "davis/novel_pair/fold3_val.csv": {
+  "rows": 3758,
+  "md5": "6640ee37937559d8f129009df47431d8"
+ },
+ "davis/novel_pair/fold3_test.csv": {
+  "rows": 1442,
+  "md5": "f0a08033caa4a36267d54e00e772ac58"
+ },
+ "davis/novel_pair/fold4_train.csv": {
+  "rows": 15453,
+  "md5": "dac15c1dabc44b6d5702ffcf7b29a699"
+ },
+ "davis/novel_pair/fold4_val.csv": {
+  "rows": 3755,
+  "md5": "da66a2ce10f9b013ccd04866486092c5"
+ },
+ "davis/novel_pair/fold4_test.csv": {
+  "rows": 1188,
+  "md5": "8bde77468415c346d56d1ddcb41ce145"
+ },
+ "davis/novel_compound/fold0_train.csv": {
+  "rows": 19016,
+  "md5": "62c29cc5fa93f29683158fcb5f6c2e4d"
+ },
+ "davis/novel_compound/fold0_val.csv": {
+  "rows": 4852,
+  "md5": "15ec119d18777ee68cdca49e06084a46"
+ },
+ "davis/novel_compound/fold0_test.csv": {
+  "rows": 6188,
+  "md5": "b37d22c519b8c240a88e6619a5aa8722"
+ },
+ "davis/novel_compound/fold1_train.csv": {
+  "rows": 19177,
+  "md5": "23dceb8077a6cec3bffc0d8e2a679503"
+ },
+ "davis/novel_compound/fold1_val.csv": {
+  "rows": 4691,
+  "md5": "5704c2dd01deb7ae93880ec3392acafa"
+ },
+ "davis/novel_compound/fold1_test.csv": {
+  "rows": 6188,
+  "md5": "e34cd8849af4636a096969fb7ed3844b"
+ },
+ "davis/novel_compound/fold2_train.csv": {
+  "rows": 19000,
+  "md5": "76d97ae262f743ced7786e59810513d6"
+ },
+ "davis/novel_compound/fold2_val.csv": {
+  "rows": 4868,
+  "md5": "a2052796ea430d6916a63dff4f64c79a"
+ },
+ "davis/novel_compound/fold2_test.csv": {
+  "rows": 6188,
+  "md5": "8c4d49a4167f8e7d8a5eced0ea253b6c"
+ },
+ "davis/novel_compound/fold3_train.csv": {
+  "rows": 19025,
+  "md5": "fab61b0bfe10d6570c1cf68621c1b5a2"
+ },
+ "davis/novel_compound/fold3_val.csv": {
+  "rows": 4843,
+  "md5": "99c6357bef15cafcba29f23f6dbae04e"
+ },
+ "davis/novel_compound/fold3_test.csv": {
+  "rows": 6188,
+  "md5": "82575b54ac4868d75a7b9fd629cf0358"
+ },
+ "davis/novel_compound/fold4_train.csv": {
+  "rows": 19881,
+  "md5": "ccb8f5187dcbb901d636e5823408d198"
+ },
+ "davis/novel_compound/fold4_val.csv": {
+  "rows": 4871,
+  "md5": "56f071ef2e7a3a219436304b0e943dca"
+ },
+ "davis/novel_compound/fold4_test.csv": {
+  "rows": 5304,
+  "md5": "ba685e6b78bbc63ec1d87490f7559e0a"
+ },
+ "davis/novel_protein/fold0_train.csv": {
+  "rows": 19531,
+  "md5": "1def554b2af6aadf76ac0f1c001e2ea3"
+ },
+ "davis/novel_protein/fold0_val.csv": {
+  "rows": 4949,
+  "md5": "3a855d4f1a9085cc781bc04b56870b9d"
+ },
+ "davis/novel_protein/fold0_test.csv": {
+  "rows": 5576,
+  "md5": "bb52ca390058a836b55e1bd5bf7243aa"
+ },
+ "davis/novel_protein/fold1_train.csv": {
+  "rows": 19903,
+  "md5": "8cc39193d291185dc72aa5c187e807f0"
+ },
+ "davis/novel_protein/fold1_val.csv": {
+  "rows": 4849,
+  "md5": "952b08b534dca1f4fd35137be84f28f6"
+ },
+ "davis/novel_protein/fold1_test.csv": {
+  "rows": 5304,
+  "md5": "bc9e74732c2c076176bbf698966ab098"
+ },
+ "davis/novel_protein/fold2_train.csv": {
+  "rows": 19684,
+  "md5": "9452178844b504ce517f6d4cfb58c635"
+ },
+ "davis/novel_protein/fold2_val.csv": {
+  "rows": 4932,
+  "md5": "879073d55d0d9309976f68f5549ae073"
+ },
+ "davis/novel_protein/fold2_test.csv": {
+  "rows": 5440,
+  "md5": "b82af4ab7655b28d7f9b538d6d50dda0"
+ },
+ "davis/novel_protein/fold3_train.csv": {
+  "rows": 18390,
+  "md5": "814f2edf363c4f251193f8be1121337a"
+ },
+ "davis/novel_protein/fold3_val.csv": {
+  "rows": 4662,
+  "md5": "07471a3ec14056a55aab7c1de6add657"
+ },
+ "davis/novel_protein/fold3_test.csv": {
+  "rows": 7004,
+  "md5": "dce9a10ac360701a68bd20eea8aab732"
+ },
+ "davis/novel_protein/fold4_train.csv": {
+  "rows": 18654,
+  "md5": "8b680e227f43ac362189189e6602f7cf"
+ },
+ "davis/novel_protein/fold4_val.csv": {
+  "rows": 4670,
+  "md5": "0fe89410b30662097e1147ba3e8e8daa"
+ },
+ "davis/novel_protein/fold4_test.csv": {
+  "rows": 6732,
+  "md5": "300ab5322abdd284246713947b508b2b"
+ },
+ "davis/novel_hard_pair/fold0_train.csv": {
+  "rows": 15641,
+  "md5": "09e50c3a7df343c56dfb66c63cc397d8"
+ },
+ "davis/novel_hard_pair/fold0_val.csv": {
+  "rows": 3799,
+  "md5": "17bc5ad8c1aaead14075ee9ffc00e4d0"
+ },
+ "davis/novel_hard_pair/fold0_test.csv": {
+  "rows": 168,
+  "md5": "43107a6303e9bb77dcce39faa3fe26b0"
+ },
+ "davis/novel_hard_pair/fold1_train.csv": {
+  "rows": 15732,
+  "md5": "bd8c88b5d5e079bd4781750be1d8d280"
+ },
+ "davis/novel_hard_pair/fold1_val.csv": {
+  "rows": 3924,
+  "md5": "a73cf2de60c9e96f71fd3325c60f4718"
+ },
+ "davis/novel_hard_pair/fold1_test.csv": {
+  "rows": 112,
+  "md5": "8bea5ed7f4ef8fa7ad78dc25f40af2b4"
+ },
+ "davis/novel_hard_pair/fold2_train.csv": {
+  "rows": 15588,
+  "md5": "7814b7482070593aa8d46c0c197a6b2d"
+ },
+ "davis/novel_hard_pair/fold2_val.csv": {
+  "rows": 3960,
+  "md5": "564f9accdc9d99ac2bdcc99d05306874"
+ },
+ "davis/novel_hard_pair/fold2_test.csv": {
+  "rows": 120,
+  "md5": "25421b48cf9df27a3297728785269574"
+ },
+ "davis/novel_hard_pair/fold3_train.csv": {
+  "rows": 14548,
+  "md5": "aaadc37843afda2a8e9ece6d3ee61666"
+ },
+ "davis/novel_hard_pair/fold3_val.csv": {
+  "rows": 3758,
+  "md5": "6640ee37937559d8f129009df47431d8"
+ },
+ "davis/novel_hard_pair/fold3_test.csv": {
+  "rows": 276,
+  "md5": "0498c84461b8c2a0cf01f9c744994583"
+ },
+ "davis/novel_hard_pair/fold4_train.csv": {
+  "rows": 15453,
+  "md5": "dac15c1dabc44b6d5702ffcf7b29a699"
+ },
+ "davis/novel_hard_pair/fold4_val.csv": {
+  "rows": 3755,
+  "md5": "da66a2ce10f9b013ccd04866486092c5"
+ },
+ "davis/novel_hard_pair/fold4_test.csv": {
+  "rows": 150,
+  "md5": "bb56253dbd90971bf5b63246d41c3e35"
+ },
+ "kiba/novel_pair/fold0_train.csv": {
+  "rows": 61382,
+  "md5": "00b2003592f3b36fa4d5a56085f1c5dd"
+ },
+ "kiba/novel_pair/fold0_val.csv": {
+  "rows": 15346,
+  "md5": "25b3c6644a19153dd9444d641d0658b4"
+ },
+ "kiba/novel_pair/fold0_test.csv": {
+  "rows": 4423,
+  "md5": "8701af99f188d4ce991ab276b4942153"
+ },
+ "kiba/novel_pair/fold1_train.csv": {
+  "rows": 64327,
+  "md5": "7ad7ba00a80f62c764981e97c486c635"
+ },
+ "kiba/novel_pair/fold1_val.csv": {
+  "rows": 16082,
+  "md5": "83fd2666e6fcfeefcb4e990c9499bb77"
+ },
+ "kiba/novel_pair/fold1_test.csv": {
+  "rows": 3391,
+  "md5": "ee073b4f681f117307cf46c7f0b2d947"
+ },
+ "kiba/novel_pair/fold2_train.csv": {
+  "rows": 57080,
+  "md5": "acc74b0b6b03bcae3f7d9dbb3082eb07"
+ },
+ "kiba/novel_pair/fold2_val.csv": {
+  "rows": 14270,
+  "md5": "35ce62fcc52ac2da31c5ce99c8218a9b"
+ },
+ "kiba/novel_pair/fold2_test.csv": {
+  "rows": 5832,
+  "md5": "8cfde635eeaf45094a1928b3ac54a578"
+ },
+ "kiba/novel_pair/fold3_train.csv": {
+  "rows": 56840,
+  "md5": "ecf9e9d2d07a77a23f09ff7af4b288b3"
+ },
+ "kiba/novel_pair/fold3_val.csv": {
+  "rows": 14210,
+  "md5": "a6384681ee156e181026b438fabe41a5"
+ },
+ "kiba/novel_pair/fold3_test.csv": {
+  "rows": 5746,
+  "md5": "d69a984d2bceb243f0c025254a274dec"
+ },
+ "kiba/novel_pair/fold4_train.csv": {
+  "rows": 61714,
+  "md5": "4d2962d9c940f89fc7a1a5b21d92ad18"
+ },
+ "kiba/novel_pair/fold4_val.csv": {
+  "rows": 15428,
+  "md5": "19c435d87a6cbc734e070f94b2d48150"
+ },
+ "kiba/novel_pair/fold4_test.csv": {
+  "rows": 4316,
+  "md5": "4bda2518b1b5bee582e99dd8452e8d5d"
+ },
+ "metz/novel_pair/fold0_train.csv": {
+  "rows": 18625,
+  "md5": "2c6973aeb2ca912a6cfa3bfc6a89a505"
+ },
+ "metz/novel_pair/fold0_val.csv": {
+  "rows": 4656,
+  "md5": "1512e88287a15e00a0b4d37dfa7ed4a4"
+ },
+ "metz/novel_pair/fold0_test.csv": {
+  "rows": 1290,
+  "md5": "48f96d9923d5dd60f05a50e791863042"
+ },
+ "metz/novel_pair/fold1_train.csv": {
+  "rows": 18512,
+  "md5": "6d6683ba7a9a814d8710946747e255ae"
+ },
+ "metz/novel_pair/fold1_val.csv": {
+  "rows": 4628,
+  "md5": "15a0969e869832b5cd2582cc1c997700"
+ },
+ "metz/novel_pair/fold1_test.csv": {
+  "rows": 1252,
+  "md5": "44a30ef24f36e8bb761ad8dc6ae2f84b"
+ },
+ "metz/novel_pair/fold2_train.csv": {
+  "rows": 17877,
+  "md5": "d5f1f19260c00df031ca20b7e7032109"
+ },
+ "metz/novel_pair/fold2_val.csv": {
+  "rows": 4469,
+  "md5": "1a648cfc394d394295cff10f2921eff7"
+ },
+ "metz/novel_pair/fold2_test.csv": {
+  "rows": 1454,
+  "md5": "6990973e42352c5c83336db5fdfd90fa"
+ },
+ "metz/novel_pair/fold3_train.csv": {
+  "rows": 17550,
+  "md5": "b9675a1a83c03747827924453f1b1881"
+ },
+ "metz/novel_pair/fold3_val.csv": {
+  "rows": 4387,
+  "md5": "ec20ff694c37488616592b2a10acf6de"
+ },
+ "metz/novel_pair/fold3_test.csv": {
+  "rows": 1599,
+  "md5": "3690fac148e2cb6127e3c6adc1738797"
+ },
+ "metz/novel_pair/fold4_train.csv": {
+  "rows": 17738,
+  "md5": "63c8adad3dfaebf7eb59eb0aab482d34"
+ },
+ "metz/novel_pair/fold4_val.csv": {
+  "rows": 4435,
+  "md5": "8c826128ec34f2ef70bd9cd17aa78047"
+ },
+ "metz/novel_pair/fold4_test.csv": {
+  "rows": 1505,
+  "md5": "aa874c0cd4d42983471ec60b1262a3a4"
+ }
+}
