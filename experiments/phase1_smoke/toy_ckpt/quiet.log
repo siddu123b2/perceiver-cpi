@@ -1,0 +1,13 @@
+Fold 0
+Model 0 best validation mse = 0.069250 on epoch 23
+Model 0 test mse = 0.158223
+Model 1 best validation mse = 0.290157 on epoch 38
+Model 1 test mse = 0.422219
+Model 2 best validation mse = 0.131741 on epoch 131
+Model 2 test mse = 0.653190
+Ensemble test mse = 0.033778
+1-fold cross validation
+	Seed 0 ==> test mse = 0.033778
+Overall test mse = 0.033778 +/- 0.000000
+Overall test Cindex = 0.666667 +/- 0.000000 
+Elapsed time = 0:00:43

@@ -26,9 +26,16 @@ How the model works:
 4. **Cross-attention block 2 (nested).** Q = compound, K/V = protein residues.
 5. **MLP head** outputs the affinity (regression).
 
+What the code actually does (read in Phase 1, `chemprop/models/model.py` + `CAB.py`). Know these for the viva:
+- **One shared attention module.** All three attention steps (fingerprint→graph, graph self-attention, compound→protein) reuse the same `self.att` weights.
+- **Attention over features, not residues.** The protein is flattened and projected to one vector of `hidden_size` before cross-attention. Q, K and V are single vectors, so attention runs across their feature dimensions (a d×d matrix), not across the 500 residue positions.
+- **`self.rnns` (GRU layers) are created but never used** in `forward`. They are still saved in checkpoints.
+- **`--alpha` does two jobs.** It is the loss weight inside `tau`, and the CNN residual scale (`sqrt(alpha)`). Changing it for label weighting also changes the CNN.
+- **No label scaling.** `run_training.py` sets `scaler = None`, so the model learns raw pKd / KIBA / pKi values.
+
 Training: loss MSE, optimiser LAMB, ensembles of checkpoints. Hyperparameters were found with Bayesian optimisation. Repo example settings: `--epochs 150 --ensemble_size 3 --batch_size 50 --dropout 0.1 --aggregation mean`.
 
-Weighting for skewed labels (paper §3.1): on Davis and KIBA, rows outside the crowded label range get a 10× larger update than rows inside it. Davis example: labels in 0–5 are multiplied by 0.5, all others by 5. Check in Phase 4 whether the repo code supports this.
+Weighting for skewed labels (paper §3.1): on Davis and KIBA, rows outside the crowded label range get a 10× larger update than rows inside it. Davis example: labels in 0–5 are multiplied by 0.5, all others by 5. **The repo supports this, and it is ON by default** (`chemprop/train/train.py:52`, loss line 88). Args: `--tau 0 5` (range, inclusive), `--alpha 0.5` (weight inside), `--beta 5` (weight outside). The defaults are the Davis values and apply to *every* run unless changed. Phase 4 must set the right `tau` for KIBA (crowded range ~11.1–12), and decide what to do for Metz (the paper describes weighting for Davis and KIBA only). Remember that `alpha` also scales the CNN residual (see above).
 
 Rules for the model code:
 - Use the official repo as the model code so results are comparable with the paper.
@@ -49,7 +56,7 @@ Sources: Tables 4, 5 and 6 of the paper. **The paper ran KIBA and Metz only in t
 
 ## 3. Datasets
 
-Raw CSVs are in `reference/data/`. Their header is `compound_iso_smiles,target_sequence,affinity`. The repo expects `smiles, sequences, label`, so Phase 2 must check which column names the repo code reads and rename the columns to match.
+Raw CSVs are in `reference/data/`. Their header is `compound_iso_smiles,target_sequence,affinity`. Checked in Phase 1: the code reads SMILES from the **first column**, the protein from a column named **`sequence`** (singular, `chemprop/data/utils.py:266`; the repo README wrongly says `sequences`), and the label from `--target_columns label`. Phase 2 renames the columns to `smiles,sequence,label`. A 4th column (e.g. `protein_name`) is ignored.
 
 | | Davis | KIBA | Metz |
 |---|---|---|---|
@@ -115,7 +122,7 @@ Every phase follows this loop: show a short plan → wait for OK → do it → r
 | Phase | What | Status |
 |---|---|---|
 | 0 | Setup: folders, git, CLAUDE.md, machine check, env choice | done (2026-10-29) |
-| 1 | Smoke test: unzip repo to `model_2d/`, install deps, train on `toy_dataset`, run `predict.py` | todo |
+| 1 | Smoke test: unzip repo to `model_2d/`, install deps, train on `toy_dataset`, run `predict.py` | done (2026-10-29), see `experiments/phase1_smoke/` |
 | 2 | Data prep (§3 rules) → `data/davis.csv`, `data/kiba.csv`, `data/metz.csv`; before/after table; TAPE handles `X` | todo |
 | 3 | Splits (§4) + leakage checks | todo |
 | 4 | Baseline: reproduce the paper (MSE, CI, Pearson, Spearman, rm² as mean ± std over 5 folds) | todo |
@@ -161,6 +168,14 @@ Phase details from the spec:
 - Local env: a Python 3.12 venv at `.venv/` in the project root, used for the backend and CPU prediction.
 - Only make compatibility fixes, never architecture changes. **List each fix and get the user's OK before applying it**, and record every one in `model_2d/CHANGES.md`.
 - The risk is tiny numeric differences from the original setup. We check for this by comparing the Phase 4 numbers against the paper's.
+
+### Environment as built (Phase 1, 2026-10-29)
+
+- `.venv/`: Python 3.12.10, `torch 2.15.0+cpu`, plus `model_2d/requirements.txt` (exact pins). On Colab, keep Colab's own torch and install only `requirements.txt`.
+- **3 compatibility fixes approved and applied** (`.cuda()` → model's device; `torch.load(..., weights_only=False)`; `np.float` → `float`). Details in `model_2d/CHANGES.md`. No other code changes were needed for train + predict.
+- On Windows, pass `--num_workers 0` to `predict.py`. It gives the same predictions and is ~30× faster, because worker processes re-import PyTorch.
+- `--seed 0` makes training repeatable on CPU (two runs differed by ≤1.2e-7).
+- Each checkpoint (`model.pt`) is ~18.7 MB. Weights are git-ignored.
 
 ## 9. Reference files
 

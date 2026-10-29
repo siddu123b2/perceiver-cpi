@@ -29,7 +29,8 @@ class AttentionBlock(nn.Module):
 
         self.do = nn.Dropout(dropout)
 
-        self.scale = torch.sqrt(torch.FloatTensor([hid_dim // n_heads])).cuda()
+        # compat fix 1 (CHANGES.md): was .cuda(); a buffer follows model.to(device)
+        self.register_buffer('scale', torch.sqrt(torch.FloatTensor([hid_dim // n_heads])), persistent=False)
 
     def forward(self, query, key, value, mask=None):
         """ 

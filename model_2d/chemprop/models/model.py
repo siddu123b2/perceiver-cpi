@@ -38,7 +38,8 @@ class InteractionModel(nn.Module):
         self.fc1_xt = nn.Linear(args.prot_hidden*args.prot_1d_out, args.hidden_size)
         self.fc_mg = nn.Linear(2048, args.hidden_size)
         self.fc_residual_connection = nn.Linear(args.prot_hidden,args.prot_1d_out)
-        self.scale = torch.sqrt(torch.FloatTensor([args.alpha])).cuda()
+        # compat fix 1 (CHANGES.md): was .cuda(); a buffer follows model.to(device)
+        self.register_buffer('scale', torch.sqrt(torch.FloatTensor([args.alpha])), persistent=False)
         self.relu = nn.ReLU()
         self.norm = nn.LayerNorm(args.prot_1d_out)
         self.do = nn.Dropout(args.dropout)
@@ -213,7 +214,7 @@ class InteractionModel(nn.Module):
                                        atom_features_batch, bond_features_batch))
 
         #protein feature extraction
-        sequence = sequence_tensor.cuda()
+        sequence = sequence_tensor.to(self.embedding_xt.weight.device)  # compat fix 1: was .cuda()
         embedded_xt = self.embedding_xt(sequence)
         input_nn = self.conv_in(embedded_xt)
 
@@ -235,7 +236,7 @@ class InteractionModel(nn.Module):
         # 1D Protein feature
         protein_tensor = self.do(self.relu(self.fc1_xt(self.normalization(protein_tensor))))
         # 1D Morgan feature
-        add_feature = self.do(self.relu(self.fc_mg(add_feature.cuda())))
+        add_feature = self.do(self.relu(self.fc_mg(add_feature.to(self.fc_mg.weight.device))))  # compat fix 1: was .cuda()
         # Cross attention blocks
         output = self.CAB(mpnn_out,add_feature,protein_tensor)
         # Output

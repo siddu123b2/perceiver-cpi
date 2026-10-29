@@ -7,6 +7,7 @@ data/**/*.csv
 *.pt
 *.pth
 *.ckpt
+events.out.tfevents.*
 
 # Python
 __pycache__/

@@ -1,0 +1,1343 @@
+Command line
+python train.py --data_path ./toy_dataset/novel_pair_0_train.csv --separate_val_path ./toy_dataset/novel_pair_0_val.csv --separate_test_path ./toy_dataset/novel_pair_0_test.csv --metric mse --dataset_type regression --save_dir ../experiments/phase1_smoke/toy_ckpt --target_columns label --epochs 150 --ensemble_size 3 --num_folds 1 --batch_size 50 --aggregation mean --dropout 0.1 --save_preds --seed 0
+Args
+{'activation': 'ReLU',
+ 'aggregation': 'mean',
+ 'aggregation_norm': 100,
+ 'alpha': 0.5,
+ 'atom_descriptor_scaling': True,
+ 'atom_descriptors': None,
+ 'atom_descriptors_path': None,
+ 'atom_descriptors_size': 0,
+ 'atom_features_size': 0,
+ 'atom_messages': False,
+ 'batch_size': 50,
+ 'beta': 5,
+ 'bias': False,
+ 'bond_feature_scaling': True,
+ 'bond_features_path': None,
+ 'bond_features_size': 0,
+ 'cache_cutoff': 10000,
+ 'checkpoint_dir': None,
+ 'checkpoint_frzn': None,
+ 'checkpoint_path': None,
+ 'checkpoint_paths': None,
+ 'class_balance': False,
+ 'config_path': None,
+ 'crossval_index_dir': None,
+ 'crossval_index_file': None,
+ 'crossval_index_sets': None,
+ 'cuda': False,
+ 'data_path': './toy_dataset/novel_pair_0_train.csv',
+ 'data_weights_path': None,
+ 'dataset_type': 'regression',
+ 'depth': 3,
+ 'device': device(type='cpu'),
+ 'dropout': 0.1,
+ 'empty_cache': False,
+ 'ensemble_size': 3,
+ 'epochs': 150,
+ 'explicit_h': False,
+ 'extra_metrics': [],
+ 'features_generator': None,
+ 'features_only': False,
+ 'features_path': None,
+ 'features_scaling': True,
+ 'features_size': None,
+ 'ffn_hidden_size': 300,
+ 'ffn_num_layers': 2,
+ 'final_lr': 0.0001,
+ 'folds_file': None,
+ 'freeze_first_only': False,
+ 'frzn_ffn_layers': 0,
+ 'gpu': None,
+ 'grad_clip': None,
+ 'hidden_size': 300,
+ 'ignore_columns': None,
+ 'init_lr': 0.0001,
+ 'kernel_size': 7,
+ 'lamp_lr': 0.0025,
+ 'log_frequency': 10,
+ 'max_data_size': None,
+ 'max_lr': 0.001,
+ 'metric': 'mse',
+ 'metrics': ['mse'],
+ 'minimize_score': True,
+ 'mpn_shared': False,
+ 'multiclass_num_classes': 3,
+ 'no_atom_descriptor_scaling': False,
+ 'no_bond_features_scaling': False,
+ 'no_cache_mol': False,
+ 'no_cuda': False,
+ 'no_features_scaling': False,
+ 'num_folds': 1,
+ 'num_lrs': 1,
+ 'num_tasks': 1,
+ 'num_workers': 8,
+ 'number_of_molecules': 1,
+ 'overwrite_default_atom_features': False,
+ 'overwrite_default_bond_features': False,
+ 'prot_1d_out': 64,
+ 'prot_1dcnn_num': 3,
+ 'prot_hidden': 128,
+ 'pytorch_seed': 0,
+ 'quiet': False,
+ 'reaction': False,
+ 'reaction_mode': 'reac_diff',
+ 'resume_experiment': False,
+ 'save_dir': '../experiments/phase1_smoke/toy_ckpt',
+ 'save_preds': True,
+ 'save_smiles_splits': False,
+ 'seed': 0,
+ 'separate_test_atom_descriptors_path': None,
+ 'separate_test_bond_features_path': None,
+ 'separate_test_features_path': None,
+ 'separate_test_path': './toy_dataset/novel_pair_0_test.csv',
+ 'separate_val_atom_descriptors_path': None,
+ 'separate_val_bond_features_path': None,
+ 'separate_val_features_path': None,
+ 'separate_val_path': './toy_dataset/novel_pair_0_val.csv',
+ 'sequence_length': 500,
+ 'show_individual_scores': False,
+ 'smiles_columns': ['smiles'],
+ 'split_sizes': (0.8, 0.1, 0.1),
+ 'split_type': 'random',
+ 'target_columns': ['label'],
+ 'target_weights': None,
+ 'task_names': ['label'],
+ 'tau': (0.0, 5.0),
+ 'test': False,
+ 'test_fold_index': None,
+ 'train_data_size': None,
+ 'undirected': False,
+ 'use_input_features': False,
+ 'val_fold_index': None,
+ 'vocab_size': 31,
+ 'warmup_epochs': 2.0}
+Loading data
+Number of tasks = 1
+Fold 0
+Splitting data with seed 0
+Total size = 5 | train size = 5 | val size = 4 | test size = 4
+Fitting scaler
+Building model 0
+InteractionModel(
+  (embedding_xt): Embedding(31, 128)
+  (conv_in): Conv1d(500, 64, kernel_size=(1,), stride=(1,))
+  (convs): ModuleList(
+    (0-2): 3 x Conv1d(128, 256, kernel_size=(7,), stride=(1,), padding=(3,))
+  )
+  (rnns): ModuleList(
+    (0-2): 3 x GRU(64, 64, batch_first=True, bidirectional=True)
+  )
+  (fc1_xt): Linear(in_features=8192, out_features=300, bias=True)
+  (fc_mg): Linear(in_features=2048, out_features=300, bias=True)
+  (fc_residual_connection): Linear(in_features=128, out_features=64, bias=True)
+  (relu): ReLU()
+  (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True, bias=True)
+  (do): Dropout(p=0.1, inplace=False)
+  (CAB): CrossAttentionBlock(
+    (att): AttentionBlock(
+      (f_q): Linear(in_features=300, out_features=300, bias=True)
+      (f_k): Linear(in_features=300, out_features=300, bias=True)
+      (f_v): Linear(in_features=300, out_features=300, bias=True)
+      (fc): Linear(in_features=300, out_features=300, bias=True)
+      (do): Dropout(p=0.1, inplace=False)
+    )
+  )
+  (encoder): MPN(
+    (encoder): ModuleList(
+      (0): MPNEncoder(
+        (dropout_layer): Dropout(p=0.1, inplace=False)
+        (act_func): ReLU()
+        (W_i): Linear(in_features=147, out_features=300, bias=False)
+        (W_h): Linear(in_features=300, out_features=300, bias=False)
+        (W_o): Linear(in_features=433, out_features=300, bias=True)
+      )
+    )
+  )
+  (ffn): Sequential(
+    (0): Dropout(p=0.1, inplace=False)
+    (1): Linear(in_features=300, out_features=300, bias=True)
+    (2): ReLU()
+    (3): Dropout(p=0.1, inplace=False)
+    (4): Linear(in_features=300, out_features=1, bias=True)
+  )
+)
+Number of parameters = 4,672,073
+Epoch 0
+Validation mse = 24.709317
+Epoch 1
+Validation mse = 22.311364
+Epoch 2
+Validation mse = 16.193275
+Epoch 3
+Validation mse = 6.609291
+Epoch 4
+Validation mse = 0.158220
+Epoch 5
+Validation mse = 0.354546
+Epoch 6
+Validation mse = 0.203076
+Epoch 7
+Validation mse = 1.192093
+Epoch 8
+Validation mse = 1.846135
+Epoch 9
+Validation mse = 1.576520
+Epoch 10
+Validation mse = 0.817318
+Epoch 11
+Validation mse = 0.108875
+Epoch 12
+Validation mse = 0.357151
+Epoch 13
+Validation mse = 0.613349
+Epoch 14
+Validation mse = 0.386383
+Epoch 15
+Validation mse = 0.111507
+Epoch 16
+Validation mse = 0.112648
+Epoch 17
+Validation mse = 0.327164
+Epoch 18
+Validation mse = 0.588889
+Epoch 19
+Validation mse = 0.781850
+Epoch 20
+Validation mse = 0.608189
+Epoch 21
+Validation mse = 0.274483
+Epoch 22
+Validation mse = 0.090886
+Epoch 23
+Validation mse = 0.069250
+Epoch 24
+Validation mse = 0.129683
+Epoch 25
+Validation mse = 0.321950
+Epoch 26
+Validation mse = 0.470344
+Epoch 27
+Validation mse = 0.444686
+Epoch 28
+Validation mse = 0.863012
+Epoch 29
+Validation mse = 1.236879
+Epoch 30
+Validation mse = 1.008745
+Epoch 31
+Validation mse = 0.584851
+Epoch 32
+Validation mse = 0.186799
+Epoch 33
+Validation mse = 0.101411
+Epoch 34
+Validation mse = 0.096116
+Epoch 35
+Validation mse = 0.187954
+Epoch 36
+Validation mse = 0.617840
+Epoch 37
+Validation mse = 1.220089
+Epoch 38
+Validation mse = 2.174302
+Epoch 39
+Validation mse = 1.365716
+Epoch 40
+Validation mse = 0.282644
+Epoch 41
+Validation mse = 0.077969
+Epoch 42
+Validation mse = 0.120929
+Epoch 43
+Validation mse = 0.099735
+Epoch 44
+Validation mse = 0.086087
+Epoch 45
+Validation mse = 0.249544
+Epoch 46
+Validation mse = 0.924520
+Epoch 47
+Validation mse = 1.993659
+Epoch 48
+Validation mse = 2.270357
+Epoch 49
+Validation mse = 1.719524
+Epoch 50
+Validation mse = 0.995781
+Epoch 51
+Validation mse = 0.597119
+Epoch 52
+Validation mse = 0.419948
+Epoch 53
+Validation mse = 0.475013
+Epoch 54
+Validation mse = 0.651778
+Epoch 55
+Validation mse = 0.902098
+Epoch 56
+Validation mse = 0.971496
+Epoch 57
+Validation mse = 1.141499
+Epoch 58
+Validation mse = 1.539050
+Epoch 59
+Validation mse = 1.855647
+Epoch 60
+Validation mse = 1.404763
+Epoch 61
+Validation mse = 0.836431
+Epoch 62
+Validation mse = 0.430336
+Epoch 63
+Validation mse = 0.282134
+Epoch 64
+Validation mse = 0.303242
+Epoch 65
+Validation mse = 0.426643
+Epoch 66
+Validation mse = 0.613446
+Epoch 67
+Validation mse = 0.880231
+Epoch 68
+Validation mse = 1.075208
+Epoch 69
+Validation mse = 1.229918
+Epoch 70
+Validation mse = 1.605621
+Epoch 71
+Validation mse = 1.815922
+Epoch 72
+Validation mse = 1.774912
+Epoch 73
+Validation mse = 1.453180
+Epoch 74
+Validation mse = 1.290062
+Epoch 75
+Validation mse = 0.919555
+Epoch 76
+Validation mse = 0.740658
+Epoch 77
+Validation mse = 0.752886
+Epoch 78
+Validation mse = 0.858492
+Epoch 79
+Validation mse = 1.111277
+Epoch 80
+Validation mse = 1.311232
+Epoch 81
+Validation mse = 1.534516
+Epoch 82
+Validation mse = 1.691159
+Epoch 83
+Validation mse = 1.707979
+Epoch 84
+Validation mse = 1.575984
+Epoch 85
+Validation mse = 1.294505
+Epoch 86
+Validation mse = 1.218614
+Epoch 87
+Validation mse = 1.174600
+Epoch 88
+Validation mse = 1.015613
+Epoch 89
+Validation mse = 0.781782
+Epoch 90
+Validation mse = 0.602920
+Epoch 91
+Validation mse = 0.679204
+Epoch 92
+Validation mse = 0.676357
+Epoch 93
+Validation mse = 0.833797
+Epoch 94
+Validation mse = 1.246802
+Epoch 95
+Validation mse = 1.371748
+Epoch 96
+Validation mse = 1.488490
+Epoch 97
+Validation mse = 1.157004
+Epoch 98
+Validation mse = 0.864366
+Epoch 99
+Validation mse = 0.716671
+Epoch 100
+Validation mse = 0.637260
+Epoch 101
+Validation mse = 0.685395
+Epoch 102
+Validation mse = 0.936608
+Epoch 103
+Validation mse = 1.279547
+Epoch 104
+Validation mse = 1.523338
+Epoch 105
+Validation mse = 1.187567
+Epoch 106
+Validation mse = 0.826588
+Epoch 107
+Validation mse = 0.613994
+Epoch 108
+Validation mse = 0.455669
+Epoch 109
+Validation mse = 0.504843
+Epoch 110
+Validation mse = 0.673584
+Epoch 111
+Validation mse = 1.048248
+Epoch 112
+Validation mse = 1.485890
+Epoch 113
+Validation mse = 1.773702
+Epoch 114
+Validation mse = 2.022068
+Epoch 115
+Validation mse = 2.203618
+Epoch 116
+Validation mse = 1.915558
+Epoch 117
+Validation mse = 1.820805
+Epoch 118
+Validation mse = 1.426204
+Epoch 119
+Validation mse = 1.254037
+Epoch 120
+Validation mse = 1.120492
+Epoch 121
+Validation mse = 1.122548
+Epoch 122
+Validation mse = 1.153223
+Epoch 123
+Validation mse = 1.099838
+Epoch 124
+Validation mse = 1.364590
+Epoch 125
+Validation mse = 1.650079
+Epoch 126
+Validation mse = 1.687045
+Epoch 127
+Validation mse = 1.415577
+Epoch 128
+Validation mse = 1.248184
+Epoch 129
+Validation mse = 1.262747
+Epoch 130
+Validation mse = 1.365433
+Epoch 131
+Validation mse = 1.509271
+Epoch 132
+Validation mse = 1.426237
+Epoch 133
+Validation mse = 1.266986
+Epoch 134
+Validation mse = 1.397299
+Epoch 135
+Validation mse = 1.547741
+Epoch 136
+Validation mse = 1.669942
+Epoch 137
+Validation mse = 1.945251
+Epoch 138
+Validation mse = 2.146469
+Epoch 139
+Validation mse = 1.723218
+Epoch 140
+Validation mse = 1.524626
+Epoch 141
+Validation mse = 1.287798
+Epoch 142
+Validation mse = 0.939078
+Epoch 143
+Validation mse = 0.839434
+Epoch 144
+Validation mse = 0.943305
+Epoch 145
+Validation mse = 1.126371
+Epoch 146
+Validation mse = 1.192358
+Epoch 147
+Validation mse = 1.563123
+Epoch 148
+Validation mse = 1.723435
+Epoch 149
+Validation mse = 1.725702
+Model 0 best validation mse = 0.069250 on epoch 23
+Loading pretrained parameter "embedding_xt.weight".
+Loading pretrained parameter "conv_in.weight".
+Loading pretrained parameter "conv_in.bias".
+Loading pretrained parameter "convs.0.weight".
+Loading pretrained parameter "convs.0.bias".
+Loading pretrained parameter "convs.1.weight".
+Loading pretrained parameter "convs.1.bias".
+Loading pretrained parameter "convs.2.weight".
+Loading pretrained parameter "convs.2.bias".
+Loading pretrained parameter "rnns.0.weight_ih_l0".
+Loading pretrained parameter "rnns.0.weight_hh_l0".
+Loading pretrained parameter "rnns.0.bias_ih_l0".
+Loading pretrained parameter "rnns.0.bias_hh_l0".
+Loading pretrained parameter "rnns.0.weight_ih_l0_reverse".
+Loading pretrained parameter "rnns.0.weight_hh_l0_reverse".
+Loading pretrained parameter "rnns.0.bias_ih_l0_reverse".
+Loading pretrained parameter "rnns.0.bias_hh_l0_reverse".
+Loading pretrained parameter "rnns.1.weight_ih_l0".
+Loading pretrained parameter "rnns.1.weight_hh_l0".
+Loading pretrained parameter "rnns.1.bias_ih_l0".
+Loading pretrained parameter "rnns.1.bias_hh_l0".
+Loading pretrained parameter "rnns.1.weight_ih_l0_reverse".
+Loading pretrained parameter "rnns.1.weight_hh_l0_reverse".
+Loading pretrained parameter "rnns.1.bias_ih_l0_reverse".
+Loading pretrained parameter "rnns.1.bias_hh_l0_reverse".
+Loading pretrained parameter "rnns.2.weight_ih_l0".
+Loading pretrained parameter "rnns.2.weight_hh_l0".
+Loading pretrained parameter "rnns.2.bias_ih_l0".
+Loading pretrained parameter "rnns.2.bias_hh_l0".
+Loading pretrained parameter "rnns.2.weight_ih_l0_reverse".
+Loading pretrained parameter "rnns.2.weight_hh_l0_reverse".
+Loading pretrained parameter "rnns.2.bias_ih_l0_reverse".
+Loading pretrained parameter "rnns.2.bias_hh_l0_reverse".
+Loading pretrained parameter "fc1_xt.weight".
+Loading pretrained parameter "fc1_xt.bias".
+Loading pretrained parameter "fc_mg.weight".
+Loading pretrained parameter "fc_mg.bias".
+Loading pretrained parameter "fc_residual_connection.weight".
+Loading pretrained parameter "fc_residual_connection.bias".
+Loading pretrained parameter "norm.weight".
+Loading pretrained parameter "norm.bias".
+Loading pretrained parameter "CAB.att.f_q.weight".
+Loading pretrained parameter "CAB.att.f_q.bias".
+Loading pretrained parameter "CAB.att.f_k.weight".
+Loading pretrained parameter "CAB.att.f_k.bias".
+Loading pretrained parameter "CAB.att.f_v.weight".
+Loading pretrained parameter "CAB.att.f_v.bias".
+Loading pretrained parameter "CAB.att.fc.weight".
+Loading pretrained parameter "CAB.att.fc.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "ffn.1.weight".
+Loading pretrained parameter "ffn.1.bias".
+Loading pretrained parameter "ffn.4.weight".
+Loading pretrained parameter "ffn.4.bias".
+Model 0 test mse = 0.158223
+Building model 1
+InteractionModel(
+  (embedding_xt): Embedding(31, 128)
+  (conv_in): Conv1d(500, 64, kernel_size=(1,), stride=(1,))
+  (convs): ModuleList(
+    (0-2): 3 x Conv1d(128, 256, kernel_size=(7,), stride=(1,), padding=(3,))
+  )
+  (rnns): ModuleList(
+    (0-2): 3 x GRU(64, 64, batch_first=True, bidirectional=True)
+  )
+  (fc1_xt): Linear(in_features=8192, out_features=300, bias=True)
+  (fc_mg): Linear(in_features=2048, out_features=300, bias=True)
+  (fc_residual_connection): Linear(in_features=128, out_features=64, bias=True)
+  (relu): ReLU()
+  (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True, bias=True)
+  (do): Dropout(p=0.1, inplace=False)
+  (CAB): CrossAttentionBlock(
+    (att): AttentionBlock(
+      (f_q): Linear(in_features=300, out_features=300, bias=True)
+      (f_k): Linear(in_features=300, out_features=300, bias=True)
+      (f_v): Linear(in_features=300, out_features=300, bias=True)
+      (fc): Linear(in_features=300, out_features=300, bias=True)
+      (do): Dropout(p=0.1, inplace=False)
+    )
+  )
+  (encoder): MPN(
+    (encoder): ModuleList(
+      (0): MPNEncoder(
+        (dropout_layer): Dropout(p=0.1, inplace=False)
+        (act_func): ReLU()
+        (W_i): Linear(in_features=147, out_features=300, bias=False)
+        (W_h): Linear(in_features=300, out_features=300, bias=False)
+        (W_o): Linear(in_features=433, out_features=300, bias=True)
+      )
+    )
+  )
+  (ffn): Sequential(
+    (0): Dropout(p=0.1, inplace=False)
+    (1): Linear(in_features=300, out_features=300, bias=True)
+    (2): ReLU()
+    (3): Dropout(p=0.1, inplace=False)
+    (4): Linear(in_features=300, out_features=1, bias=True)
+  )
+)
+Number of parameters = 4,672,073
+Epoch 0
+Validation mse = 23.944657
+Epoch 1
+Validation mse = 20.723142
+Epoch 2
+Validation mse = 13.833804
+Epoch 3
+Validation mse = 4.100404
+Epoch 4
+Validation mse = 0.511395
+Epoch 5
+Validation mse = 0.477018
+Epoch 6
+Validation mse = 2.383216
+Epoch 7
+Validation mse = 4.843258
+Epoch 8
+Validation mse = 6.018237
+Epoch 9
+Validation mse = 5.735160
+Epoch 10
+Validation mse = 4.267870
+Epoch 11
+Validation mse = 2.528493
+Epoch 12
+Validation mse = 0.948945
+Epoch 13
+Validation mse = 0.310421
+Epoch 14
+Validation mse = 0.584457
+Epoch 15
+Validation mse = 0.525695
+Epoch 16
+Validation mse = 0.308926
+Epoch 17
+Validation mse = 0.488633
+Epoch 18
+Validation mse = 1.132399
+Epoch 19
+Validation mse = 1.763718
+Epoch 20
+Validation mse = 2.132175
+Epoch 21
+Validation mse = 2.008186
+Epoch 22
+Validation mse = 1.625840
+Epoch 23
+Validation mse = 1.100920
+Epoch 24
+Validation mse = 0.741293
+Epoch 25
+Validation mse = 0.490751
+Epoch 26
+Validation mse = 0.370382
+Epoch 27
+Validation mse = 0.329706
+Epoch 28
+Validation mse = 0.327277
+Epoch 29
+Validation mse = 0.385108
+Epoch 30
+Validation mse = 0.594832
+Epoch 31
+Validation mse = 0.786295
+Epoch 32
+Validation mse = 0.853361
+Epoch 33
+Validation mse = 0.779967
+Epoch 34
+Validation mse = 0.708559
+Epoch 35
+Validation mse = 0.550244
+Epoch 36
+Validation mse = 0.407602
+Epoch 37
+Validation mse = 0.318638
+Epoch 38
+Validation mse = 0.290157
+Epoch 39
+Validation mse = 0.291658
+Epoch 40
+Validation mse = 0.298294
+Epoch 41
+Validation mse = 0.340819
+Epoch 42
+Validation mse = 0.474266
+Epoch 43
+Validation mse = 0.589910
+Epoch 44
+Validation mse = 0.610923
+Epoch 45
+Validation mse = 0.568916
+Epoch 46
+Validation mse = 0.507320
+Epoch 47
+Validation mse = 0.446351
+Epoch 48
+Validation mse = 0.392050
+Epoch 49
+Validation mse = 0.318695
+Epoch 50
+Validation mse = 0.312248
+Epoch 51
+Validation mse = 0.368224
+Epoch 52
+Validation mse = 0.349248
+Epoch 53
+Validation mse = 0.308004
+Epoch 54
+Validation mse = 0.324743
+Epoch 55
+Validation mse = 0.401952
+Epoch 56
+Validation mse = 0.556863
+Epoch 57
+Validation mse = 0.631090
+Epoch 58
+Validation mse = 0.568425
+Epoch 59
+Validation mse = 0.438044
+Epoch 60
+Validation mse = 0.303216
+Epoch 61
+Validation mse = 0.351863
+Epoch 62
+Validation mse = 0.592803
+Epoch 63
+Validation mse = 0.559658
+Epoch 64
+Validation mse = 0.409627
+Epoch 65
+Validation mse = 0.297809
+Epoch 66
+Validation mse = 0.458656
+Epoch 67
+Validation mse = 0.693002
+Epoch 68
+Validation mse = 0.801749
+Epoch 69
+Validation mse = 0.790582
+Epoch 70
+Validation mse = 0.695035
+Epoch 71
+Validation mse = 0.508533
+Epoch 72
+Validation mse = 0.350485
+Epoch 73
+Validation mse = 0.309023
+Epoch 74
+Validation mse = 0.315404
+Epoch 75
+Validation mse = 0.332449
+Epoch 76
+Validation mse = 0.330603
+Epoch 77
+Validation mse = 0.331697
+Epoch 78
+Validation mse = 0.327901
+Epoch 79
+Validation mse = 0.321759
+Epoch 80
+Validation mse = 0.310035
+Epoch 81
+Validation mse = 0.310470
+Epoch 82
+Validation mse = 0.339683
+Epoch 83
+Validation mse = 0.348721
+Epoch 84
+Validation mse = 0.345284
+Epoch 85
+Validation mse = 0.332504
+Epoch 86
+Validation mse = 0.310003
+Epoch 87
+Validation mse = 0.302209
+Epoch 88
+Validation mse = 0.317971
+Epoch 89
+Validation mse = 0.332293
+Epoch 90
+Validation mse = 0.342259
+Epoch 91
+Validation mse = 0.330485
+Epoch 92
+Validation mse = 0.307437
+Epoch 93
+Validation mse = 0.304762
+Epoch 94
+Validation mse = 0.318065
+Epoch 95
+Validation mse = 0.312458
+Epoch 96
+Validation mse = 0.305518
+Epoch 97
+Validation mse = 0.304056
+Epoch 98
+Validation mse = 0.303708
+Epoch 99
+Validation mse = 0.307587
+Epoch 100
+Validation mse = 0.316534
+Epoch 101
+Validation mse = 0.315406
+Epoch 102
+Validation mse = 0.312698
+Epoch 103
+Validation mse = 0.307355
+Epoch 104
+Validation mse = 0.307964
+Epoch 105
+Validation mse = 0.308820
+Epoch 106
+Validation mse = 0.307179
+Epoch 107
+Validation mse = 0.324267
+Epoch 108
+Validation mse = 0.379011
+Epoch 109
+Validation mse = 0.387127
+Epoch 110
+Validation mse = 0.357036
+Epoch 111
+Validation mse = 0.328197
+Epoch 112
+Validation mse = 0.310859
+Epoch 113
+Validation mse = 0.306425
+Epoch 114
+Validation mse = 0.313315
+Epoch 115
+Validation mse = 0.336427
+Epoch 116
+Validation mse = 0.335638
+Epoch 117
+Validation mse = 0.366107
+Epoch 118
+Validation mse = 0.350542
+Epoch 119
+Validation mse = 0.318515
+Epoch 120
+Validation mse = 0.310155
+Epoch 121
+Validation mse = 0.315967
+Epoch 122
+Validation mse = 0.326089
+Epoch 123
+Validation mse = 0.335440
+Epoch 124
+Validation mse = 0.318956
+Epoch 125
+Validation mse = 0.310934
+Epoch 126
+Validation mse = 0.318189
+Epoch 127
+Validation mse = 0.337930
+Epoch 128
+Validation mse = 0.377870
+Epoch 129
+Validation mse = 0.410477
+Epoch 130
+Validation mse = 0.404725
+Epoch 131
+Validation mse = 0.421157
+Epoch 132
+Validation mse = 0.413618
+Epoch 133
+Validation mse = 0.358264
+Epoch 134
+Validation mse = 0.312426
+Epoch 135
+Validation mse = 0.307987
+Epoch 136
+Validation mse = 0.313275
+Epoch 137
+Validation mse = 0.319721
+Epoch 138
+Validation mse = 0.316371
+Epoch 139
+Validation mse = 0.312339
+Epoch 140
+Validation mse = 0.313278
+Epoch 141
+Validation mse = 0.330648
+Epoch 142
+Validation mse = 0.387667
+Epoch 143
+Validation mse = 0.478572
+Epoch 144
+Validation mse = 0.507125
+Epoch 145
+Validation mse = 0.412736
+Epoch 146
+Validation mse = 0.317841
+Epoch 147
+Validation mse = 0.309850
+Epoch 148
+Validation mse = 0.315411
+Epoch 149
+Validation mse = 0.319384
+Model 1 best validation mse = 0.290157 on epoch 38
+Loading pretrained parameter "embedding_xt.weight".
+Loading pretrained parameter "conv_in.weight".
+Loading pretrained parameter "conv_in.bias".
+Loading pretrained parameter "convs.0.weight".
+Loading pretrained parameter "convs.0.bias".
+Loading pretrained parameter "convs.1.weight".
+Loading pretrained parameter "convs.1.bias".
+Loading pretrained parameter "convs.2.weight".
+Loading pretrained parameter "convs.2.bias".
+Loading pretrained parameter "rnns.0.weight_ih_l0".
+Loading pretrained parameter "rnns.0.weight_hh_l0".
+Loading pretrained parameter "rnns.0.bias_ih_l0".
+Loading pretrained parameter "rnns.0.bias_hh_l0".
+Loading pretrained parameter "rnns.0.weight_ih_l0_reverse".
+Loading pretrained parameter "rnns.0.weight_hh_l0_reverse".
+Loading pretrained parameter "rnns.0.bias_ih_l0_reverse".
+Loading pretrained parameter "rnns.0.bias_hh_l0_reverse".
+Loading pretrained parameter "rnns.1.weight_ih_l0".
+Loading pretrained parameter "rnns.1.weight_hh_l0".
+Loading pretrained parameter "rnns.1.bias_ih_l0".
+Loading pretrained parameter "rnns.1.bias_hh_l0".
+Loading pretrained parameter "rnns.1.weight_ih_l0_reverse".
+Loading pretrained parameter "rnns.1.weight_hh_l0_reverse".
+Loading pretrained parameter "rnns.1.bias_ih_l0_reverse".
+Loading pretrained parameter "rnns.1.bias_hh_l0_reverse".
+Loading pretrained parameter "rnns.2.weight_ih_l0".
+Loading pretrained parameter "rnns.2.weight_hh_l0".
+Loading pretrained parameter "rnns.2.bias_ih_l0".
+Loading pretrained parameter "rnns.2.bias_hh_l0".
+Loading pretrained parameter "rnns.2.weight_ih_l0_reverse".
+Loading pretrained parameter "rnns.2.weight_hh_l0_reverse".
+Loading pretrained parameter "rnns.2.bias_ih_l0_reverse".
+Loading pretrained parameter "rnns.2.bias_hh_l0_reverse".
+Loading pretrained parameter "fc1_xt.weight".
+Loading pretrained parameter "fc1_xt.bias".
+Loading pretrained parameter "fc_mg.weight".
+Loading pretrained parameter "fc_mg.bias".
+Loading pretrained parameter "fc_residual_connection.weight".
+Loading pretrained parameter "fc_residual_connection.bias".
+Loading pretrained parameter "norm.weight".
+Loading pretrained parameter "norm.bias".
+Loading pretrained parameter "CAB.att.f_q.weight".
+Loading pretrained parameter "CAB.att.f_q.bias".
+Loading pretrained parameter "CAB.att.f_k.weight".
+Loading pretrained parameter "CAB.att.f_k.bias".
+Loading pretrained parameter "CAB.att.f_v.weight".
+Loading pretrained parameter "CAB.att.f_v.bias".
+Loading pretrained parameter "CAB.att.fc.weight".
+Loading pretrained parameter "CAB.att.fc.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "ffn.1.weight".
+Loading pretrained parameter "ffn.1.bias".
+Loading pretrained parameter "ffn.4.weight".
+Loading pretrained parameter "ffn.4.bias".
+Model 1 test mse = 0.422219
+Building model 2
+InteractionModel(
+  (embedding_xt): Embedding(31, 128)
+  (conv_in): Conv1d(500, 64, kernel_size=(1,), stride=(1,))
+  (convs): ModuleList(
+    (0-2): 3 x Conv1d(128, 256, kernel_size=(7,), stride=(1,), padding=(3,))
+  )
+  (rnns): ModuleList(
+    (0-2): 3 x GRU(64, 64, batch_first=True, bidirectional=True)
+  )
+  (fc1_xt): Linear(in_features=8192, out_features=300, bias=True)
+  (fc_mg): Linear(in_features=2048, out_features=300, bias=True)
+  (fc_residual_connection): Linear(in_features=128, out_features=64, bias=True)
+  (relu): ReLU()
+  (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True, bias=True)
+  (do): Dropout(p=0.1, inplace=False)
+  (CAB): CrossAttentionBlock(
+    (att): AttentionBlock(
+      (f_q): Linear(in_features=300, out_features=300, bias=True)
+      (f_k): Linear(in_features=300, out_features=300, bias=True)
+      (f_v): Linear(in_features=300, out_features=300, bias=True)
+      (fc): Linear(in_features=300, out_features=300, bias=True)
+      (do): Dropout(p=0.1, inplace=False)
+    )
+  )
+  (encoder): MPN(
+    (encoder): ModuleList(
+      (0): MPNEncoder(
+        (dropout_layer): Dropout(p=0.1, inplace=False)
+        (act_func): ReLU()
+        (W_i): Linear(in_features=147, out_features=300, bias=False)
+        (W_h): Linear(in_features=300, out_features=300, bias=False)
+        (W_o): Linear(in_features=433, out_features=300, bias=True)
+      )
+    )
+  )
+  (ffn): Sequential(
+    (0): Dropout(p=0.1, inplace=False)
+    (1): Linear(in_features=300, out_features=300, bias=True)
+    (2): ReLU()
+    (3): Dropout(p=0.1, inplace=False)
+    (4): Linear(in_features=300, out_features=1, bias=True)
+  )
+)
+Number of parameters = 4,672,073
+Epoch 0
+Validation mse = 23.778836
+Epoch 1
+Validation mse = 20.251782
+Epoch 2
+Validation mse = 12.984792
+Epoch 3
+Validation mse = 3.090726
+Epoch 4
+Validation mse = 1.215293
+Epoch 5
+Validation mse = 0.290022
+Epoch 6
+Validation mse = 0.848692
+Epoch 7
+Validation mse = 2.873325
+Epoch 8
+Validation mse = 4.183197
+Epoch 9
+Validation mse = 4.263357
+Epoch 10
+Validation mse = 3.136112
+Epoch 11
+Validation mse = 1.533091
+Epoch 12
+Validation mse = 0.370651
+Epoch 13
+Validation mse = 0.205002
+Epoch 14
+Validation mse = 0.193988
+Epoch 15
+Validation mse = 0.235922
+Epoch 16
+Validation mse = 0.347386
+Epoch 17
+Validation mse = 0.368975
+Epoch 18
+Validation mse = 0.370293
+Epoch 19
+Validation mse = 0.259604
+Epoch 20
+Validation mse = 0.252333
+Epoch 21
+Validation mse = 0.386953
+Epoch 22
+Validation mse = 0.604937
+Epoch 23
+Validation mse = 0.947658
+Epoch 24
+Validation mse = 1.200842
+Epoch 25
+Validation mse = 1.116732
+Epoch 26
+Validation mse = 0.845581
+Epoch 27
+Validation mse = 0.526644
+Epoch 28
+Validation mse = 0.293235
+Epoch 29
+Validation mse = 0.180250
+Epoch 30
+Validation mse = 0.148085
+Epoch 31
+Validation mse = 0.147379
+Epoch 32
+Validation mse = 0.163430
+Epoch 33
+Validation mse = 0.200932
+Epoch 34
+Validation mse = 0.204063
+Epoch 35
+Validation mse = 0.186004
+Epoch 36
+Validation mse = 0.156332
+Epoch 37
+Validation mse = 0.150622
+Epoch 38
+Validation mse = 0.204752
+Epoch 39
+Validation mse = 0.245331
+Epoch 40
+Validation mse = 0.202879
+Epoch 41
+Validation mse = 0.150347
+Epoch 42
+Validation mse = 0.147318
+Epoch 43
+Validation mse = 0.156926
+Epoch 44
+Validation mse = 0.163414
+Epoch 45
+Validation mse = 0.175538
+Epoch 46
+Validation mse = 0.177914
+Epoch 47
+Validation mse = 0.152923
+Epoch 48
+Validation mse = 0.150223
+Epoch 49
+Validation mse = 0.142756
+Epoch 50
+Validation mse = 0.142196
+Epoch 51
+Validation mse = 0.142283
+Epoch 52
+Validation mse = 0.150286
+Epoch 53
+Validation mse = 0.164975
+Epoch 54
+Validation mse = 0.208890
+Epoch 55
+Validation mse = 0.228815
+Epoch 56
+Validation mse = 0.209996
+Epoch 57
+Validation mse = 0.174740
+Epoch 58
+Validation mse = 0.150002
+Epoch 59
+Validation mse = 0.141429
+Epoch 60
+Validation mse = 0.169957
+Epoch 61
+Validation mse = 0.215732
+Epoch 62
+Validation mse = 0.199724
+Epoch 63
+Validation mse = 0.173571
+Epoch 64
+Validation mse = 0.171721
+Epoch 65
+Validation mse = 0.150095
+Epoch 66
+Validation mse = 0.141622
+Epoch 67
+Validation mse = 0.165151
+Epoch 68
+Validation mse = 0.230421
+Epoch 69
+Validation mse = 0.278552
+Epoch 70
+Validation mse = 0.242583
+Epoch 71
+Validation mse = 0.191666
+Epoch 72
+Validation mse = 0.149026
+Epoch 73
+Validation mse = 0.141110
+Epoch 74
+Validation mse = 0.149740
+Epoch 75
+Validation mse = 0.149667
+Epoch 76
+Validation mse = 0.141236
+Epoch 77
+Validation mse = 0.167799
+Epoch 78
+Validation mse = 0.255874
+Epoch 79
+Validation mse = 0.277833
+Epoch 80
+Validation mse = 0.241027
+Epoch 81
+Validation mse = 0.167979
+Epoch 82
+Validation mse = 0.140645
+Epoch 83
+Validation mse = 0.169159
+Epoch 84
+Validation mse = 0.229733
+Epoch 85
+Validation mse = 0.229260
+Epoch 86
+Validation mse = 0.228983
+Epoch 87
+Validation mse = 0.217813
+Epoch 88
+Validation mse = 0.168720
+Epoch 89
+Validation mse = 0.139659
+Epoch 90
+Validation mse = 0.161460
+Epoch 91
+Validation mse = 0.184999
+Epoch 92
+Validation mse = 0.176955
+Epoch 93
+Validation mse = 0.160819
+Epoch 94
+Validation mse = 0.139468
+Epoch 95
+Validation mse = 0.137803
+Epoch 96
+Validation mse = 0.139843
+Epoch 97
+Validation mse = 0.159081
+Epoch 98
+Validation mse = 0.183392
+Epoch 99
+Validation mse = 0.187012
+Epoch 100
+Validation mse = 0.152745
+Epoch 101
+Validation mse = 0.136628
+Epoch 102
+Validation mse = 0.135643
+Epoch 103
+Validation mse = 0.134948
+Epoch 104
+Validation mse = 0.135267
+Epoch 105
+Validation mse = 0.135227
+Epoch 106
+Validation mse = 0.149654
+Epoch 107
+Validation mse = 0.184460
+Epoch 108
+Validation mse = 0.204117
+Epoch 109
+Validation mse = 0.217247
+Epoch 110
+Validation mse = 0.204231
+Epoch 111
+Validation mse = 0.157212
+Epoch 112
+Validation mse = 0.133012
+Epoch 113
+Validation mse = 0.145822
+Epoch 114
+Validation mse = 0.169416
+Epoch 115
+Validation mse = 0.154799
+Epoch 116
+Validation mse = 0.135557
+Epoch 117
+Validation mse = 0.132522
+Epoch 118
+Validation mse = 0.136173
+Epoch 119
+Validation mse = 0.144554
+Epoch 120
+Validation mse = 0.139139
+Epoch 121
+Validation mse = 0.132336
+Epoch 122
+Validation mse = 0.134133
+Epoch 123
+Validation mse = 0.140258
+Epoch 124
+Validation mse = 0.137677
+Epoch 125
+Validation mse = 0.138663
+Epoch 126
+Validation mse = 0.139923
+Epoch 127
+Validation mse = 0.131817
+Epoch 128
+Validation mse = 0.135276
+Epoch 129
+Validation mse = 0.132345
+Epoch 130
+Validation mse = 0.131752
+Epoch 131
+Validation mse = 0.131741
+Epoch 132
+Validation mse = 0.134990
+Epoch 133
+Validation mse = 0.140678
+Epoch 134
+Validation mse = 0.149177
+Epoch 135
+Validation mse = 0.149009
+Epoch 136
+Validation mse = 0.150439
+Epoch 137
+Validation mse = 0.139701
+Epoch 138
+Validation mse = 0.134571
+Epoch 139
+Validation mse = 0.136747
+Epoch 140
+Validation mse = 0.149926
+Epoch 141
+Validation mse = 0.162353
+Epoch 142
+Validation mse = 0.213448
+Epoch 143
+Validation mse = 0.238021
+Epoch 144
+Validation mse = 0.222995
+Epoch 145
+Validation mse = 0.200393
+Epoch 146
+Validation mse = 0.192254
+Epoch 147
+Validation mse = 0.150565
+Epoch 148
+Validation mse = 0.134450
+Epoch 149
+Validation mse = 0.187484
+Model 2 best validation mse = 0.131741 on epoch 131
+Loading pretrained parameter "embedding_xt.weight".
+Loading pretrained parameter "conv_in.weight".
+Loading pretrained parameter "conv_in.bias".
+Loading pretrained parameter "convs.0.weight".
+Loading pretrained parameter "convs.0.bias".
+Loading pretrained parameter "convs.1.weight".
+Loading pretrained parameter "convs.1.bias".
+Loading pretrained parameter "convs.2.weight".
+Loading pretrained parameter "convs.2.bias".
+Loading pretrained parameter "rnns.0.weight_ih_l0".
+Loading pretrained parameter "rnns.0.weight_hh_l0".
+Loading pretrained parameter "rnns.0.bias_ih_l0".
+Loading pretrained parameter "rnns.0.bias_hh_l0".
+Loading pretrained parameter "rnns.0.weight_ih_l0_reverse".
+Loading pretrained parameter "rnns.0.weight_hh_l0_reverse".
+Loading pretrained parameter "rnns.0.bias_ih_l0_reverse".
+Loading pretrained parameter "rnns.0.bias_hh_l0_reverse".
+Loading pretrained parameter "rnns.1.weight_ih_l0".
+Loading pretrained parameter "rnns.1.weight_hh_l0".
+Loading pretrained parameter "rnns.1.bias_ih_l0".
+Loading pretrained parameter "rnns.1.bias_hh_l0".
+Loading pretrained parameter "rnns.1.weight_ih_l0_reverse".
+Loading pretrained parameter "rnns.1.weight_hh_l0_reverse".
+Loading pretrained parameter "rnns.1.bias_ih_l0_reverse".
+Loading pretrained parameter "rnns.1.bias_hh_l0_reverse".
+Loading pretrained parameter "rnns.2.weight_ih_l0".
+Loading pretrained parameter "rnns.2.weight_hh_l0".
+Loading pretrained parameter "rnns.2.bias_ih_l0".
+Loading pretrained parameter "rnns.2.bias_hh_l0".
+Loading pretrained parameter "rnns.2.weight_ih_l0_reverse".
+Loading pretrained parameter "rnns.2.weight_hh_l0_reverse".
+Loading pretrained parameter "rnns.2.bias_ih_l0_reverse".
+Loading pretrained parameter "rnns.2.bias_hh_l0_reverse".
+Loading pretrained parameter "fc1_xt.weight".
+Loading pretrained parameter "fc1_xt.bias".
+Loading pretrained parameter "fc_mg.weight".
+Loading pretrained parameter "fc_mg.bias".
+Loading pretrained parameter "fc_residual_connection.weight".
+Loading pretrained parameter "fc_residual_connection.bias".
+Loading pretrained parameter "norm.weight".
+Loading pretrained parameter "norm.bias".
+Loading pretrained parameter "CAB.att.f_q.weight".
+Loading pretrained parameter "CAB.att.f_q.bias".
+Loading pretrained parameter "CAB.att.f_k.weight".
+Loading pretrained parameter "CAB.att.f_k.bias".
+Loading pretrained parameter "CAB.att.f_v.weight".
+Loading pretrained parameter "CAB.att.f_v.bias".
+Loading pretrained parameter "CAB.att.fc.weight".
+Loading pretrained parameter "CAB.att.fc.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "ffn.1.weight".
+Loading pretrained parameter "ffn.1.bias".
+Loading pretrained parameter "ffn.4.weight".
+Loading pretrained parameter "ffn.4.bias".
+Model 2 test mse = 0.653190
+Ensemble test mse = 0.033778
+1-fold cross validation
+	Seed 0 ==> test mse = 0.033778
+Overall test mse = 0.033778 +/- 0.000000
+Overall test Cindex = 0.666667 +/- 0.000000 
+Elapsed time = 0:00:43
