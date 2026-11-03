@@ -78,6 +78,8 @@ It writes to a temporary file first and then swaps it in, so a cut-off never lea
 
 Without `--resume`, nothing changes.
 
+*Fix (2026-11-03, before the first GPU run).* The resume file is now loaded onto the CPU (`map_location='cpu'`). Previously it loaded onto the training device. On a GPU that would have turned the saved random-number states into GPU tensors, and `torch.set_rng_state` only accepts CPU tensors, so resuming on Colab would have crashed. The weights and optimiser state are copied onto the GPU by `load_state_dict` as before. CPU behaviour is unchanged.
+
 **Effect on results:** none. Tested on CPU with a 2,000-row Davis sample (2026-10-29).
 
 Multi-threaded (normal) runs, compared with the original code's predictions:
@@ -98,5 +100,8 @@ Single-threaded (`OMP_NUM_THREADS=1`, which makes CPU maths exactly repeatable):
 ## Known warnings we leave alone (not changes)
 
 - **RDKit `DEPRECATION WARNING: please use MorganGenerator`.** The old Morgan fingerprint function still works. We keep it so the fingerprints are exactly the original ones.
+  - It prints once per molecule per epoch, about 18 million lines over the three Phase 4 runs.
+  - So the Phase 4 scripts start training through `experiments/phase4_baseline/gpu_bundle/train_quiet.py`, which switches off RDKit *warnings* (`RDLogger.DisableLog('rdApp.warning')`; errors still show) and then runs `train.py` unchanged.
+  - Checked 2026-11-03: test predictions identical to calling `train.py` directly (max difference 0.0).
 - **PyTorch `UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow`** (`train.py`, `predict.py`). Speed only, results are unaffected.
 - **Slow prediction on Windows.** `predict.py` uses 8 data-loader worker processes by default, and on Windows each one re-imports PyTorch (~10 s per model). Pass `--num_workers 0`: same predictions (checked: max difference 0.0), 34 s → 1 s on the toy set. Training already uses 0 workers for small datasets.

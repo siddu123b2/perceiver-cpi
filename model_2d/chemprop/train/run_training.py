@@ -259,7 +259,8 @@ def run_training(args: TrainArgs,
         best_epoch, n_iter = 0, 0
         best_state, start_epoch = None, 0
         if resuming:
-            state = torch.load(resume_path, map_location=args.device, weights_only=False)
+            # Load onto the CPU: random-number states must be CPU tensors; load_state_dict copies weights to the GPU
+            state = torch.load(resume_path, map_location='cpu', weights_only=False)
             # Rewrite the best model first, in case a cut-off left model.pt half-written
             model.load_state_dict(state['best_model'] if state['best_model'] is not None else state['model'])
             save_checkpoint(os.path.join(save_dir, MODEL_FILE_NAME), model, scaler,

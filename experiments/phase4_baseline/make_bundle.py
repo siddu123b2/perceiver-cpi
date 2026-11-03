@@ -8,9 +8,13 @@ The zip holds one folder, perceiver_gpu/, with:
   model_2d/                                   the model code, incl. requirements-gpu.txt
   data/splits/manifest.json + the 9 novel-pair fold-0 files for Davis, KIBA and Metz
   BUNDLE_INFO.txt                             date and git commit, so results can be traced back
+
+It also fills colab_upload/perceiver_cpi_colab/ (zip + Colab notebook + README_FOR_COLLEGE.txt):
+the folder to upload to Google Drive when the college runs the training on Colab.
 """
 import hashlib
 import json
+import shutil
 import subprocess
 import zipfile
 from datetime import datetime
@@ -20,6 +24,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 SPLITS = ROOT / 'data' / 'splits'
 OUT = HERE / 'perceiver_gpu_bundle.zip'
+UPLOAD = HERE / 'colab_upload' / 'perceiver_cpi_colab'  # name must match DRIVE_FOLDER_NAME in the notebook
 TOP = 'perceiver_gpu'
 
 
@@ -47,6 +52,14 @@ def main():
             zf.write(path, name)
         zf.writestr(f'{TOP}/BUNDLE_INFO.txt', info)
     print(f'{info}Wrote {len(files) + 1} files to {OUT} ({OUT.stat().st_size / 1024 ** 2:.1f} MB)')
+
+    # The folder to upload to Google Drive for the college's Colab run: notebook + zip + their instructions
+    if UPLOAD.exists():
+        shutil.rmtree(UPLOAD)
+    UPLOAD.mkdir(parents=True)
+    for path in (OUT, HERE / 'colab' / 'Perceiver_CPI_train.ipynb', HERE / 'colab' / 'README_FOR_COLLEGE.txt'):
+        shutil.copy2(path, UPLOAD / path.name)
+    print(f'Upload folder for Google Drive: {UPLOAD} ({", ".join(sorted(p.name for p in UPLOAD.iterdir()))})')
 
 
 if __name__ == '__main__':

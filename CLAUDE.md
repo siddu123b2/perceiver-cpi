@@ -147,7 +147,7 @@ Every phase follows this loop: show a short plan → wait for OK → do it → r
 | 1 | Smoke test: unzip repo to `model_2d/`, install deps, train on `toy_dataset`, run `predict.py` | done (2026-10-29), see `experiments/phase1_smoke/` |
 | 2 | Data prep (§3 rules) → `data/davis.csv`, `data/kiba.csv`, `data/metz.csv`; before/after table; TAPE handles `X` | done (2026-10-29), see `data/prep_report.md` |
 | 3 | Splits (§4) + leakage checks | done (2026-10-29), see `data/splits/summary.md`. 90 files, 340 leakage checks pass, checker caught 6/6 planted breaks |
-| 4 | Baseline, **reduced scope** (user decision 2026-10-29): ONE model per dataset (Davis, KIBA, Metz), trained on novel-pair **fold 0** on a borrowed RTX laptop. Report MSE, CI, Pearson, Spearman, rm² next to the paper's | **in progress**: resume change, MC dropout and the GPU bundle are built. **Next:** the user trains on the RTX laptop, copies `results_to_copy.zip` back into `experiments/phase4_baseline/`, then Claude evaluates (metrics, MC-dropout check, `results.md`) |
+| 4 | Baseline, **reduced scope** (user decision 2026-10-29): ONE model per dataset (Davis, KIBA, Metz), trained on novel-pair **fold 0**, **on the college's GPU via Google Colab** (changed 2026-11-03). Report MSE, CI, Pearson, Spearman, rm² next to the paper's | **in progress**: the Colab notebook and upload folder are built and tested offline. **Next:** the user uploads `experiments/phase4_baseline/colab_upload/perceiver_cpi_colab/` to Drive and shares it with the college (`colab/UPLOAD_GUIDE.md`). The college runs it. The user then extracts `results_to_copy.zip` into `experiments/phase4_baseline/`, and Claude evaluates (metrics, MC-dropout check, `results.md`) |
 | 5 | Improve accuracy, one change at a time, using validation only; log in `experiments/results_log.md` | todo |
 | 6 | Model registry (`models/<dataset>/` + `model_card.md`), `model_2d/predict_api.py`, `MODEL_SELECTION.md` | todo |
 | 7 | Backend: `/health`, `/models`, `/predict`, `/history`, `/predict-3d` placeholder; pytest | todo |
@@ -159,7 +159,29 @@ Phase details from the spec:
   - **Why:** the full paper protocol (5 folds × ensemble of 3 × 150 epochs × 5 setting-datasets) is ~300 M training row-passes, roughly 45 days on this laptop's CPU and days of GPU time.
   - **± confidence = MC dropout** instead of ensemble spread. Predict the same input N times with dropout left on, and use the standard deviation. Dropout (0.1) is already in the model, so no extra training is needed.
   - **Reporting:** put our fold-0 test MSE and CI next to the paper's 5-fold mean ± std, and state clearly: "single model, single fold, so the comparison is not exact". The paper's fold-to-fold std for novel pair is small (±0.010–0.016 MSE), so one fold is a fair indicator, but the missing ensemble may cost some accuracy.
-  - **Where (changed 2026-10-29): a borrowed laptop with an NVIDIA RTX 4050/3050**, not Colab.
+  - **Where (changed again 2026-11-03): the college's GPU through Google Colab.** The user uploads a Drive folder and shares it with the college (Editor), and the college runs the notebook.
+    - `make_bundle.py` also builds `colab_upload/perceiver_cpi_colab/`, holding `Perceiver_CPI_train.ipynb`, `perceiver_gpu_bundle.zip` and `README_FOR_COLLEGE.txt`. The sources are in `experiments/phase4_baseline/colab/`; the user's guide and email draft are in `colab/UPLOAD_GUIDE.md`.
+    - **What the notebook does:**
+      - mounts Drive and finds the folder (shared folders need "Add shortcut to My Drive");
+      - unzips the bundle to `/content`;
+      - installs `requirements.txt` with pip, keeping Colab's own torch (if the pinned versions fail, it falls back to current versions, and `environment.txt` records them);
+      - runs `check_setup.py`, plus `--skip-timing` when resuming;
+      - runs `train_all.py` with `PERCEIVER_RUNS` pointing at `<Drive folder>/runs`, so resume survives disconnects;
+      - runs `pack_results.py`, which writes `<Drive folder>/results_to_copy.zip`.
+    - All heavy work runs in subprocesses, so pip upgrades need no runtime restart.
+    - **Designed for the college's powerful GPUs (user, 2026-11-03).** The model is small, so one run leaves a big GPU mostly idle; the bottleneck is CPU batch preparation.
+      - With **6+ CPU cores**, `train_all.py` trains Davis, Metz and KIBA **at the same time** as 3 processes. With several GPUs, each run gets its own (`CUDA_VISIBLE_DEVICES`). The wall-clock time is then about that of KIBA alone.
+      - On Linux each run also gets `min(4, cores // runs - 1)` data-loader workers. That's the authors' own default setup; batch order still comes from the main process.
+      - Progress is one line every 5 minutes; the logs are in `runs/<dataset>/console.log` (`TQDM_DISABLE=1`).
+      - Each run sees exactly one GPU, picked only from the GPUs in `CUDA_VISIBLE_DEVICES` if that is already set (shared servers). A run that always sees one GPU can also resume on a machine with fewer GPUs.
+      - Training starts through `gpu_bundle/train_quiet.py`, which runs the repo's `train.py` unchanged but with RDKit warnings off. Otherwise the old fingerprint function prints ~18 million deprecation lines, which would flood Colab and Drive. Same predictions (checked: max difference 0.0).
+      - Fewer cores means one after another, with live progress bars. Force a mode with `--parallel` / `--sequential`.
+      - **None of this changes the results:** same settings, batch size, precision (no AMP/TF32 changes) and seeds.
+        - Checked 2026-11-03 with one CPU thread (fully repeatable): "at the same time" and "one after another" give identical predictions for all three datasets (max difference 0.0).
+        - **Rounding noise (viva point).** Normal multi-threaded CPU runs, and GPU runs, are not bit-for-bit repeatable, whichever mode is used. Threads add numbers in a slightly different order, and training amplifies these ~1e-6 differences. In the 1-epoch offline tests, test MSE was Davis 1.08653 vs 1.08652, Metz 1.8250 vs 1.8254 and KIBA 2.176 vs 2.205. So a re-run of Phase 4 would give slightly different numbers; this is normal and not a bug.
+      - GPU checks are generic (`torch.cuda`), not NVIDIA-specific wording.
+    - Tested offline by running the notebook's cells with a fake Drive folder (`--allow-cpu --epochs 1`).
+  - **Earlier plan (2026-10-29, still usable): a borrowed laptop with an NVIDIA RTX 4050/3050.**
     - Build the bundle with `experiments/phase4_baseline/make_bundle.py` → `perceiver_gpu_bundle.zip` (~38 MB). It holds the code, the 9 fold-0 split files and `manifest.json`.
     - The beginner instructions are `gpu_bundle/RUN_ON_GPU_LAPTOP.md`. The scripts are `check_setup.py` (checks + timing), `train_all.py` (Davis → Metz → KIBA, with `--resume`) and `pack_results.py` (→ `results_to_copy.zip`).
     - The results go back into `experiments/phase4_baseline/runs/<dataset>/`.

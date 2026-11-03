@@ -84,19 +84,23 @@ From `model_2d\`, train a tiny model (~1 min on CPU), then predict with it:
 
 Expected results are in [experiments/phase1_smoke/README.md](experiments/phase1_smoke/README.md).
 
-## Training the baseline (Phase 4, on an NVIDIA laptop)
+## Training the baseline (Phase 4, needs an NVIDIA GPU)
 
-Training needs an NVIDIA GPU. We train **one model per dataset** on novel-pair fold 0 (see CLAUDE.md §6 for why).
+We train **one model per dataset** on novel-pair fold 0 (see CLAUDE.md §6 for why). First, build the bundle on this laptop (~38 MB):
 
-1. On this laptop, build the bundle (~38 MB):
+```
+.venv\Scripts\python.exe experiments\phase4_baseline\make_bundle.py
+```
 
-   ```
-   .venv\Scripts\python.exe experiments\phase4_baseline\make_bundle.py
-   ```
+Then use either route.
 
-2. Copy `experiments\phase4_baseline\perceiver_gpu_bundle.zip` to the GPU laptop.
-3. Follow [RUN_ON_GPU_LAPTOP.md](experiments/phase4_baseline/gpu_bundle/RUN_ON_GPU_LAPTOP.md), which is also inside the zip. It covers installing Python and the driver, checking the GPU, training Davis → Metz → KIBA (resumable), and copying the results back.
-4. The results land in `experiments\phase4_baseline\runs\`.
+**A. Google Colab (the college's GPU; current plan).** Upload `experiments\phase4_baseline\colab_upload\perceiver_cpi_colab\` to Google Drive and share it.
+- Steps and an email draft are in [UPLOAD_GUIDE.md](experiments/phase4_baseline/colab/UPLOAD_GUIDE.md).
+- Whoever runs the notebook just chooses *Run all*. It resumes after disconnects and writes `results_to_copy.zip` into the Drive folder.
+
+**B. A laptop with an NVIDIA GPU.** Copy `perceiver_gpu_bundle.zip` to it and follow [RUN_ON_GPU_LAPTOP.md](experiments/phase4_baseline/gpu_bundle/RUN_ON_GPU_LAPTOP.md).
+
+Either way, extract `results_to_copy.zip` into `experiments\phase4_baseline\`. The results then sit in `experiments\phase4_baseline\runs\`.
 
 For predictions with a ± (MC dropout), see [model_2d/mc_dropout.py](model_2d/mc_dropout.py).
 

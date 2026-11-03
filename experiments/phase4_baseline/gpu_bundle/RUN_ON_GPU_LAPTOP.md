@@ -108,13 +108,21 @@ It should end with a time estimate and **`ALL CHECKS PASSED`**.
 .venv\Scripts\python.exe train_all.py
 ```
 
-The script trains **Davis → Metz → KIBA**, one after another. For each one you'll see a progress bar like:
+The script trains **Davis, Metz and KIBA**. `check_setup.py` already told you how.
+
+**At the same time** (laptops with 6 or more CPU cores, which is most RTX laptops): a progress line appears every 5 minutes, like
+
+```
+[14:05, 1.2 h] davis epoch 81/150 (~1.0 h left) | metz epoch 66/150 (~1.5 h left) | kiba epoch 20/150 (~7.8 h left)
+```
+
+**One after another** (fewer cores): you'll see a progress bar for each dataset, like
 
 ```
  37%|███▋      | 56/150 [1:02:13<1:44:20, 66.6s/it]
 ```
 
-How to read it: 56 of 150 epochs are done, it has run for 1 h 02 min so far, and about 1 h 44 min are left for this dataset.
+How to read the bar: 56 of 150 epochs are done, it has run for 1 h 02 min so far, and about 1 h 44 min are left for this dataset.
 
 **Stopping and continuing is safe.** That covers pressing **Ctrl+C**, the laptop restarting, or a power cut. To continue:
 1. Open PowerShell in the folder (step 2).

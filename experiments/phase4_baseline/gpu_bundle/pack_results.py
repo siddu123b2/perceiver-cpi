@@ -11,7 +11,7 @@ import sys
 import zipfile
 from datetime import datetime
 
-from train_all import DATASETS, ROOT, RUNS
+from train_all import DATASETS, RUNS
 
 SKIP = ('resume.pt', '.tmp')
 
@@ -31,11 +31,11 @@ def main():
     if missing:
         print(f'Note: not finished yet: {", ".join(missing)}. Packing what is there.')
 
-    out = ROOT / 'results_to_copy.zip'
+    out = RUNS.parent / 'results_to_copy.zip'  # next to runs/ (on Google Drive when run from Colab)
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as zf:
         for path in sorted(RUNS.rglob('*')):
             if path.is_file() and not path.name.endswith(SKIP) and not path.name.startswith('events.out.tfevents'):
-                zf.write(path, path.relative_to(ROOT).as_posix())
+                zf.write(path, 'runs/' + path.relative_to(RUNS).as_posix())
         zf.writestr('runs/environment.txt', environment())
     print(f'Packed {", ".join(finished) or "nothing"} into:\n  {out}\n  ({out.stat().st_size / 1024 ** 2:.0f} MB)')
     print('Copy this file to your own laptop (step 10 of the instructions).')
