@@ -180,7 +180,7 @@ Phase details from the spec:
         - Checked 2026-11-03 with one CPU thread (fully repeatable): "at the same time" and "one after another" give identical predictions for all three datasets (max difference 0.0).
         - **Rounding noise (viva point).** Normal multi-threaded CPU runs, and GPU runs, are not bit-for-bit repeatable, whichever mode is used. Threads add numbers in a slightly different order, and training amplifies these ~1e-6 differences. In the 1-epoch offline tests, test MSE was Davis 1.08653 vs 1.08652, Metz 1.8250 vs 1.8254 and KIBA 2.176 vs 2.205. So a re-run of Phase 4 would give slightly different numbers; this is normal and not a bug.
       - GPU checks are generic (`torch.cuda`), not NVIDIA-specific wording.
-    - Tested offline by running the notebook's cells with a fake Drive folder (`--allow-cpu --epochs 1`).
+    - Tested offline by running the notebook's cells with a fake Drive folder (`--allow-cpu --epochs 1`): a fresh run, then "Run all" again (skips finished datasets, re-packs). Passed in both modes. The final test used the exact upload folder built from commit `6acddfe` (2026-11-03): 0 RDKit warning lines, ~11 KB per run log, `results_to_copy.zip` 52 MB.
   - **Earlier plan (2026-10-29, still usable): a borrowed laptop with an NVIDIA RTX 4050/3050.**
     - Build the bundle with `experiments/phase4_baseline/make_bundle.py` → `perceiver_gpu_bundle.zip` (~38 MB). It holds the code, the 9 fold-0 split files and `manifest.json`.
     - The beginner instructions are `gpu_bundle/RUN_ON_GPU_LAPTOP.md`. The scripts are `check_setup.py` (checks + timing), `train_all.py` (Davis → Metz → KIBA, with `--resume`) and `pack_results.py` (→ `results_to_copy.zip`).
