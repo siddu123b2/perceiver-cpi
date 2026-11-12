@@ -34,3 +34,5 @@ Thumbs.db
 # Phase 4 transfer zips (rebuilt by experiments/phase4_baseline/make_bundle.py / pack_results.py)
 experiments/**/*.zip
 experiments/phase4_baseline/colab_upload/
+experiments/phase5/kaggle_upload/
+experiments/phase5/runs/

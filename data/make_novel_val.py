@@ -10,8 +10,11 @@ This builds a second validation set the same way the test set is built: whole co
 proteins are held out, so nothing in it was ever seen during training.
 
 Written per dataset, next to the Phase 3 files:
-  data/splits/<dataset>/novel_pair/fold0_train2.csv     reduced training set
-  data/splits/<dataset>/novel_pair/fold0_novelval.csv   novel-pair validation set
+  fold0_train2.csv    + fold0_novelval.csv    run A: the new yardstick (validation = unseen entities)
+  fold0_train3.csv    + fold0_randomval.csv   run B: the control (validation = random pairs, seen entities)
+
+Run B is the control for the Phase 5 experiment. Both validation sets are the same size, and run B's
+training set is only ~7% smaller, so the runs differ almost only in WHAT the validation set measures.
 
 The Phase 3 files are not touched, so the paper-style comparison still works. The TEST set is not
 read, not changed and not involved.
@@ -52,6 +55,24 @@ def build(dataset):
 
     training.to_csv(fold0(dataset, 'train2'), index=False)
     validation.to_csv(fold0(dataset, 'novelval'), index=False)
+
+    # Control for the Phase 5 experiment: same training rows, same validation size, but the validation
+    # is random PAIRS out of the training set, so its compounds and proteins were all seen - the Phase 3
+    # style. Identical smiles+sequence rows move together (the user's Phase 3 rule), so the same input
+    # can never sit on both sides.
+    pairs = training[['smiles', 'sequence']].drop_duplicates()
+    shuffled = pairs.sample(frac=1.0, random_state=0).reset_index(drop=True)
+    held = set()
+    rows_wanted, rows_held = len(validation), 0
+    counts = training.groupby(['smiles', 'sequence']).size()
+    for smiles, sequence in shuffled.itertuples(index=False):
+        if rows_held >= rows_wanted:
+            break
+        held.add((smiles, sequence))
+        rows_held += int(counts[(smiles, sequence)])
+    is_held = pd.Series(list(zip(training['smiles'], training['sequence'])), index=training.index).isin(held)
+    training.loc[~is_held].to_csv(fold0(dataset, 'train3'), index=False)
+    training.loc[is_held].to_csv(fold0(dataset, 'randomval'), index=False)
     return pool, training, validation
 
 
@@ -73,6 +94,16 @@ def check(dataset, pool, training, validation):
     # the user's Phase 3 rule: identical smiles+sequence rows are never split across sides
     if pair(training) & pair(validation):
         problems.append('the same smiles+sequence pair is on both sides')
+
+    # the control split (run B)
+    train3 = pd.read_csv(fold0(dataset, 'train3'))
+    randomval = pd.read_csv(fold0(dataset, 'randomval'))
+    if pair(train3) & pair(randomval):
+        problems.append('control: the same smiles+sequence pair is in both train3 and randomval')
+    if pair(randomval) & pair(test):
+        problems.append('control: a pair appears in both randomval and the TEST set')
+    if len(train3) + len(randomval) != len(training):
+        problems.append('control: train3 + randomval does not add up to train2')
     return problems
 
 
@@ -83,7 +114,8 @@ def main():
              'The Phase 3 files are unchanged and the test set was not involved.', '',
              f'Held out: the last {HOLD_OUT:.0%} of training compounds and the last {HOLD_OUT:.0%} of training proteins,',
              'sorted alphabetically (the same deterministic rule the repo uses for folds).', '',
-             '| Dataset | Rows available | New training | Novel validation | Unused | Test (for scale) |',
+             '## Run A: the new yardstick', '',
+             '| Dataset | Rows available | Training (train2) | Novel validation | Unused | Test (for scale) |',
              '|---|---|---|---|---|---|']
     manifest, failed = {}, False
     for dataset in DATASETS:
@@ -92,7 +124,7 @@ def main():
         test_rows = len(pd.read_csv(fold0(dataset, 'test')))
         lines.append(f'| {dataset.capitalize()} | {len(pool):,} | {len(training):,} | {len(validation):,} | '
                      f'{len(pool) - len(training) - len(validation):,} | {test_rows:,} |')
-        for part in ('train2', 'novelval'):
+        for part in ('train2', 'novelval', 'train3', 'randomval'):
             path = fold0(dataset, part)
             manifest[f'{dataset}/novel_pair/{part}'] = {
                 'rows': int(len(pd.read_csv(path))),
@@ -100,6 +132,17 @@ def main():
         print(f'{dataset:6s} train {len(training):6,}  novel-val {len(validation):5,}  '
               f'(test {test_rows:,})  checks: {"FAILED -> " + "; ".join(problems) if problems else "all pass"}')
         failed |= bool(problems)
+
+    lines += ['', '## Run B: the control (same size validation, seen compounds and proteins)', '',
+              'Random pairs taken out of train2, keeping identical smiles+sequence rows together.',
+              'Training is ~7% smaller than run A, so the two runs differ almost only in what the',
+              'validation set measures.', '',
+              '| Dataset | Training (train3) | Random validation |', '|---|---|---|']
+    import pandas as _pd
+    for dataset in DATASETS:
+        a = len(_pd.read_csv(fold0(dataset, 'train3')))
+        b = len(_pd.read_csv(fold0(dataset, 'randomval')))
+        lines.append(f'| {dataset.capitalize()} | {a:,} | {b:,} |')
 
     lines += ['', '**CHECKS FAILED — see the script output. Do not use these files.**'] if failed else \
              ['', 'Every check passed: no compound and no protein is shared between the new training set',

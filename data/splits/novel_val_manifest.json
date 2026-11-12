@@ -7,6 +7,14 @@
     "rows": 840,
     "md5": "95f77eb5e49e7b89065324ed4b243d29"
   },
+  "davis/novel_pair/train3": {
+    "rows": 11304,
+    "md5": "a8101f5ebef723eacdb72abcc86abfa1"
+  },
+  "davis/novel_pair/randomval": {
+    "rows": 840,
+    "md5": "0fbfa7b57f3ca47745eb693526d6bb88"
+  },
   "kiba/novel_pair/train2": {
     "rows": 51480,
     "md5": "597f41cc9d5e6fe7f0074e1dc9773397"
@@ -15,6 +23,14 @@
     "rows": 2641,
     "md5": "b9100b436b77f4714226b7e00b8850ba"
   },
+  "kiba/novel_pair/train3": {
+    "rows": 48839,
+    "md5": "62c81d1904c816441d0c158ec31c7190"
+  },
+  "kiba/novel_pair/randomval": {
+    "rows": 2641,
+    "md5": "1e009d2c262ce4474e640f8b04e1eaa2"
+  },
   "metz/novel_pair/train2": {
     "rows": 14831,
     "md5": "a8754d9d9a870862e85eb08c4e1ef74d"
@@ -22,5 +38,13 @@
   "metz/novel_pair/novelval": {
     "rows": 954,
     "md5": "b7292fdd36c8f902836cd08e167e10ef"
+  },
+  "metz/novel_pair/train3": {
+    "rows": 13877,
+    "md5": "298f3fbfdffa3c52f7a19b0ef66d3a64"
+  },
+  "metz/novel_pair/randomval": {
+    "rows": 954,
+    "md5": "2508aba2107c05931ec0165b10c4a6f7"
   }
 }
