@@ -139,7 +139,9 @@ Perceiver_cpi/
 
 ## 6. Phases and status
 
-Every phase follows this loop: show a short plan → wait for OK → do it → run a test that proves it works → explain in simple words → git commit.
+Every phase follows this loop: do it → run a test that proves it works → explain in simple words → git commit.
+
+**Working agreement (user, 2026-11-12), replaces the earlier "wait for OK at every step":** the user trusts Claude to keep going without asking permission for each step. Claude still **tells the user first, and waits**, before anything that would tie up their laptop or the college GPU for a long time, because they need to know to leave the machine running. Threshold: **anything expected to take more than ~15 minutes on the user's laptop, and anything at all that needs the college GPU.** Short checks, analysis, code and commits need no announcement. The §7 rules below still apply unchanged (ask before installing large packages, deleting files, or pushing to a remote). The user's standing priority: the finished app must work for real inputs, not just on the benchmark.
 
 | Phase | What | Status |
 |---|---|---|

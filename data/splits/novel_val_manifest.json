@@ -1,0 +1,26 @@
+{
+  "davis/novel_pair/train2": {
+    "rows": 12144,
+    "md5": "2b5b70fc205bd87fcb71af0407ccb554"
+  },
+  "davis/novel_pair/novelval": {
+    "rows": 840,
+    "md5": "95f77eb5e49e7b89065324ed4b243d29"
+  },
+  "kiba/novel_pair/train2": {
+    "rows": 51480,
+    "md5": "597f41cc9d5e6fe7f0074e1dc9773397"
+  },
+  "kiba/novel_pair/novelval": {
+    "rows": 2641,
+    "md5": "b9100b436b77f4714226b7e00b8850ba"
+  },
+  "metz/novel_pair/train2": {
+    "rows": 14831,
+    "md5": "a8754d9d9a870862e85eb08c4e1ef74d"
+  },
+  "metz/novel_pair/novelval": {
+    "rows": 954,
+    "md5": "b7292fdd36c8f902836cd08e167e10ef"
+  }
+}
