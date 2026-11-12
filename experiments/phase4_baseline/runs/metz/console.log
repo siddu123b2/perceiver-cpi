@@ -1,0 +1,923 @@
+Command line
+python /content/perceiver_gpu/model_2d/train.py --data_path /content/perceiver_gpu/data/splits/metz/novel_pair/fold0_train.csv --separate_val_path /content/perceiver_gpu/data/splits/metz/novel_pair/fold0_val.csv --separate_test_path /content/perceiver_gpu/data/splits/metz/novel_pair/fold0_test.csv --dataset_type regression --target_columns label --metric mse --epochs 150 --ensemble_size 1 --num_folds 1 --batch_size 50 --dropout 0.1 --aggregation mean --seed 0 --pytorch_seed 0 --num_workers 3 --save_dir /content/drive/MyDrive/perceiver_cpi_colab/runs/metz --save_preds --alpha 0.5 --beta 0.5 --resume
+Args
+{'activation': 'ReLU',
+ 'aggregation': 'mean',
+ 'aggregation_norm': 100,
+ 'alpha': 0.5,
+ 'atom_descriptor_scaling': True,
+ 'atom_descriptors': None,
+ 'atom_descriptors_path': None,
+ 'atom_descriptors_size': 0,
+ 'atom_features_size': 0,
+ 'atom_messages': False,
+ 'batch_size': 50,
+ 'beta': 0.5,
+ 'bias': False,
+ 'bond_feature_scaling': True,
+ 'bond_features_path': None,
+ 'bond_features_size': 0,
+ 'cache_cutoff': 10000,
+ 'checkpoint_dir': None,
+ 'checkpoint_frzn': None,
+ 'checkpoint_path': None,
+ 'checkpoint_paths': None,
+ 'class_balance': False,
+ 'config_path': None,
+ 'crossval_index_dir': None,
+ 'crossval_index_file': None,
+ 'crossval_index_sets': None,
+ 'cuda': True,
+ 'data_path': '/content/perceiver_gpu/data/splits/metz/novel_pair/fold0_train.csv',
+ 'data_weights_path': None,
+ 'dataset_type': 'regression',
+ 'depth': 3,
+ 'device': device(type='cuda'),
+ 'dropout': 0.1,
+ 'empty_cache': False,
+ 'ensemble_size': 1,
+ 'epochs': 150,
+ 'explicit_h': False,
+ 'extra_metrics': [],
+ 'features_generator': None,
+ 'features_only': False,
+ 'features_path': None,
+ 'features_scaling': True,
+ 'features_size': None,
+ 'ffn_hidden_size': 300,
+ 'ffn_num_layers': 2,
+ 'final_lr': 0.0001,
+ 'folds_file': None,
+ 'freeze_first_only': False,
+ 'frzn_ffn_layers': 0,
+ 'gpu': None,
+ 'grad_clip': None,
+ 'hidden_size': 300,
+ 'ignore_columns': None,
+ 'init_lr': 0.0001,
+ 'kernel_size': 7,
+ 'lamp_lr': 0.0025,
+ 'log_frequency': 10,
+ 'max_data_size': None,
+ 'max_lr': 0.001,
+ 'metric': 'mse',
+ 'metrics': ['mse'],
+ 'minimize_score': True,
+ 'mpn_shared': False,
+ 'multiclass_num_classes': 3,
+ 'no_atom_descriptor_scaling': False,
+ 'no_bond_features_scaling': False,
+ 'no_cache_mol': False,
+ 'no_cuda': False,
+ 'no_features_scaling': False,
+ 'num_folds': 1,
+ 'num_lrs': 1,
+ 'num_tasks': 1,
+ 'num_workers': 3,
+ 'number_of_molecules': 1,
+ 'overwrite_default_atom_features': False,
+ 'overwrite_default_bond_features': False,
+ 'prot_1d_out': 64,
+ 'prot_1dcnn_num': 3,
+ 'prot_hidden': 128,
+ 'pytorch_seed': 0,
+ 'quiet': False,
+ 'reaction': False,
+ 'reaction_mode': 'reac_diff',
+ 'resume': True,
+ 'resume_experiment': False,
+ 'save_dir': '/content/drive/MyDrive/perceiver_cpi_colab/runs/metz',
+ 'save_preds': True,
+ 'save_smiles_splits': False,
+ 'seed': 0,
+ 'separate_test_atom_descriptors_path': None,
+ 'separate_test_bond_features_path': None,
+ 'separate_test_features_path': None,
+ 'separate_test_path': '/content/perceiver_gpu/data/splits/metz/novel_pair/fold0_test.csv',
+ 'separate_val_atom_descriptors_path': None,
+ 'separate_val_bond_features_path': None,
+ 'separate_val_features_path': None,
+ 'separate_val_path': '/content/perceiver_gpu/data/splits/metz/novel_pair/fold0_val.csv',
+ 'sequence_length': 500,
+ 'show_individual_scores': False,
+ 'smiles_columns': ['smiles'],
+ 'split_sizes': (0.8, 0.1, 0.1),
+ 'split_type': 'random',
+ 'target_columns': ['label'],
+ 'target_weights': None,
+ 'task_names': ['label'],
+ 'tau': (0.0, 5.0),
+ 'test': False,
+ 'test_fold_index': None,
+ 'train_data_size': None,
+ 'undirected': False,
+ 'use_input_features': False,
+ 'val_fold_index': None,
+ 'vocab_size': 31,
+ 'warmup_epochs': 2.0}
+Loading data
+Number of tasks = 1
+Fold 0
+Splitting data with seed 0
+Total size = 18,625 | train size = 18,625 | val size = 4,656 | test size = 1,290
+Fitting scaler
+Building model 0
+InteractionModel(
+  (embedding_xt): Embedding(31, 128)
+  (conv_in): Conv1d(500, 64, kernel_size=(1,), stride=(1,))
+  (convs): ModuleList(
+    (0-2): 3 x Conv1d(128, 256, kernel_size=(7,), stride=(1,), padding=(3,))
+  )
+  (rnns): ModuleList(
+    (0-2): 3 x GRU(64, 64, batch_first=True, bidirectional=True)
+  )
+  (fc1_xt): Linear(in_features=8192, out_features=300, bias=True)
+  (fc_mg): Linear(in_features=2048, out_features=300, bias=True)
+  (fc_residual_connection): Linear(in_features=128, out_features=64, bias=True)
+  (relu): ReLU()
+  (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  (do): Dropout(p=0.1, inplace=False)
+  (CAB): CrossAttentionBlock(
+    (att): AttentionBlock(
+      (f_q): Linear(in_features=300, out_features=300, bias=True)
+      (f_k): Linear(in_features=300, out_features=300, bias=True)
+      (f_v): Linear(in_features=300, out_features=300, bias=True)
+      (fc): Linear(in_features=300, out_features=300, bias=True)
+      (do): Dropout(p=0.1, inplace=False)
+    )
+  )
+  (encoder): MPN(
+    (encoder): ModuleList(
+      (0): MPNEncoder(
+        (dropout_layer): Dropout(p=0.1, inplace=False)
+        (act_func): ReLU()
+        (W_i): Linear(in_features=147, out_features=300, bias=False)
+        (W_h): Linear(in_features=300, out_features=300, bias=False)
+        (W_o): Linear(in_features=433, out_features=300, bias=True)
+      )
+    )
+  )
+  (ffn): Sequential(
+    (0): Dropout(p=0.1, inplace=False)
+    (1): Linear(in_features=300, out_features=300, bias=True)
+    (2): ReLU()
+    (3): Dropout(p=0.1, inplace=False)
+    (4): Linear(in_features=300, out_features=1, bias=True)
+  )
+)
+Number of parameters = 4,672,073
+Moving model to cuda
+Epoch 0
+/content/perceiver_gpu/model_2d/chemprop/train/train.py:73: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at /pytorch/torch/csrc/utils/tensor_new.cpp:253.)
+  sequence_tensor = torch.LongTensor(new_ar)
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.884893
+Epoch 1
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.756513
+Epoch 2
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.707401
+Epoch 3
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.593552
+Epoch 4
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.569796
+Epoch 5
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.555516
+Epoch 6
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.566130
+Epoch 7
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.542646
+Epoch 8
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.536409
+Epoch 9
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.541150
+Epoch 10
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.634796
+Epoch 11
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.530425
+Epoch 12
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.545800
+Epoch 13
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.535660
+Epoch 14
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.522190
+Epoch 15
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.521583
+Epoch 16
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.631923
+Epoch 17
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.525902
+Epoch 18
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.539760
+Epoch 19
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.550870
+Epoch 20
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.728960
+Epoch 21
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.716188
+Epoch 22
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.532836
+Epoch 23
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.542871
+Epoch 24
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.649470
+Epoch 25
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.536084
+Epoch 26
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.564675
+Epoch 27
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.578506
+Epoch 28
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.521700
+Epoch 29
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.564700
+Epoch 30
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.539990
+Epoch 31
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.526548
+Epoch 32
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.512494
+Epoch 33
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.535763
+Epoch 34
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.520658
+Epoch 35
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.510765
+Epoch 36
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.541389
+Epoch 37
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.506394
+Epoch 38
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.510775
+Epoch 39
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.508702
+Epoch 40
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.519845
+Epoch 41
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.528767
+Epoch 42
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.544826
+Epoch 43
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.512317
+Epoch 44
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.525793
+Epoch 45
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.508109
+Epoch 46
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.555883
+Epoch 47
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.528244
+Epoch 48
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.511071
+Epoch 49
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.530013
+Epoch 50
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.528034
+Epoch 51
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.513686
+Epoch 52
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.524449
+Epoch 53
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.505848
+Epoch 54
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.514933
+Epoch 55
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.515580
+Epoch 56
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.522260
+Epoch 57
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.557307
+Epoch 58
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.507774
+Epoch 59
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.505841
+Epoch 60
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.521507
+Epoch 61
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.509495
+Epoch 62
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.519719
+Epoch 63
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.516314
+Epoch 64
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.524632
+Epoch 65
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.510510
+Epoch 66
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.513834
+Epoch 67
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.513246
+Epoch 68
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.518275
+Epoch 69
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.508471
+Epoch 70
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.513725
+Epoch 71
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.519945
+Epoch 72
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.522674
+Epoch 73
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.523808
+Epoch 74
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.505274
+Epoch 75
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.517622
+Epoch 76
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.565876
+Epoch 77
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.557345
+Epoch 78
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.550020
+Epoch 79
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.520861
+Epoch 80
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.511880
+Epoch 81
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.511475
+Epoch 82
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.533613
+Epoch 83
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.518565
+Epoch 84
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.501629
+Epoch 85
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.516353
+Epoch 86
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.536315
+Epoch 87
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.509784
+Epoch 88
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.514597
+Epoch 89
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.512553
+Epoch 90
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.549856
+Epoch 91
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.507677
+Epoch 92
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.507075
+Epoch 93
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.517672
+Epoch 94
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.522422
+Epoch 95
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.539748
+Epoch 96
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.515102
+Epoch 97
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.520543
+Epoch 98
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.516261
+Epoch 99
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.521123
+Epoch 100
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.522194
+Epoch 101
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.515711
+Epoch 102
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.510954
+Epoch 103
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.527941
+Epoch 104
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.511989
+Epoch 105
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.530340
+Epoch 106
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.520037
+Epoch 107
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.518845
+Epoch 108
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.558129
+Epoch 109
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.520626
+Epoch 110
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.509968
+Epoch 111
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.514685
+Epoch 112
+Command line
+python /content/perceiver_gpu/model_2d/train.py --data_path /content/perceiver_gpu/data/splits/metz/novel_pair/fold0_train.csv --separate_val_path /content/perceiver_gpu/data/splits/metz/novel_pair/fold0_val.csv --separate_test_path /content/perceiver_gpu/data/splits/metz/novel_pair/fold0_test.csv --dataset_type regression --target_columns label --metric mse --epochs 150 --ensemble_size 1 --num_folds 1 --batch_size 50 --dropout 0.1 --aggregation mean --seed 0 --pytorch_seed 0 --num_workers 3 --save_dir /content/drive/MyDrive/perceiver_cpi_colab/runs/metz --save_preds --alpha 0.5 --beta 0.5 --resume
+Args
+{'activation': 'ReLU',
+ 'aggregation': 'mean',
+ 'aggregation_norm': 100,
+ 'alpha': 0.5,
+ 'atom_descriptor_scaling': True,
+ 'atom_descriptors': None,
+ 'atom_descriptors_path': None,
+ 'atom_descriptors_size': 0,
+ 'atom_features_size': 0,
+ 'atom_messages': False,
+ 'batch_size': 50,
+ 'beta': 0.5,
+ 'bias': False,
+ 'bond_feature_scaling': True,
+ 'bond_features_path': None,
+ 'bond_features_size': 0,
+ 'cache_cutoff': 10000,
+ 'checkpoint_dir': None,
+ 'checkpoint_frzn': None,
+ 'checkpoint_path': None,
+ 'checkpoint_paths': None,
+ 'class_balance': False,
+ 'config_path': None,
+ 'crossval_index_dir': None,
+ 'crossval_index_file': None,
+ 'crossval_index_sets': None,
+ 'cuda': True,
+ 'data_path': '/content/perceiver_gpu/data/splits/metz/novel_pair/fold0_train.csv',
+ 'data_weights_path': None,
+ 'dataset_type': 'regression',
+ 'depth': 3,
+ 'device': device(type='cuda'),
+ 'dropout': 0.1,
+ 'empty_cache': False,
+ 'ensemble_size': 1,
+ 'epochs': 150,
+ 'explicit_h': False,
+ 'extra_metrics': [],
+ 'features_generator': None,
+ 'features_only': False,
+ 'features_path': None,
+ 'features_scaling': True,
+ 'features_size': None,
+ 'ffn_hidden_size': 300,
+ 'ffn_num_layers': 2,
+ 'final_lr': 0.0001,
+ 'folds_file': None,
+ 'freeze_first_only': False,
+ 'frzn_ffn_layers': 0,
+ 'gpu': None,
+ 'grad_clip': None,
+ 'hidden_size': 300,
+ 'ignore_columns': None,
+ 'init_lr': 0.0001,
+ 'kernel_size': 7,
+ 'lamp_lr': 0.0025,
+ 'log_frequency': 10,
+ 'max_data_size': None,
+ 'max_lr': 0.001,
+ 'metric': 'mse',
+ 'metrics': ['mse'],
+ 'minimize_score': True,
+ 'mpn_shared': False,
+ 'multiclass_num_classes': 3,
+ 'no_atom_descriptor_scaling': False,
+ 'no_bond_features_scaling': False,
+ 'no_cache_mol': False,
+ 'no_cuda': False,
+ 'no_features_scaling': False,
+ 'num_folds': 1,
+ 'num_lrs': 1,
+ 'num_tasks': 1,
+ 'num_workers': 3,
+ 'number_of_molecules': 1,
+ 'overwrite_default_atom_features': False,
+ 'overwrite_default_bond_features': False,
+ 'prot_1d_out': 64,
+ 'prot_1dcnn_num': 3,
+ 'prot_hidden': 128,
+ 'pytorch_seed': 0,
+ 'quiet': False,
+ 'reaction': False,
+ 'reaction_mode': 'reac_diff',
+ 'resume': True,
+ 'resume_experiment': False,
+ 'save_dir': '/content/drive/MyDrive/perceiver_cpi_colab/runs/metz',
+ 'save_preds': True,
+ 'save_smiles_splits': False,
+ 'seed': 0,
+ 'separate_test_atom_descriptors_path': None,
+ 'separate_test_bond_features_path': None,
+ 'separate_test_features_path': None,
+ 'separate_test_path': '/content/perceiver_gpu/data/splits/metz/novel_pair/fold0_test.csv',
+ 'separate_val_atom_descriptors_path': None,
+ 'separate_val_bond_features_path': None,
+ 'separate_val_features_path': None,
+ 'separate_val_path': '/content/perceiver_gpu/data/splits/metz/novel_pair/fold0_val.csv',
+ 'sequence_length': 500,
+ 'show_individual_scores': False,
+ 'smiles_columns': ['smiles'],
+ 'split_sizes': (0.8, 0.1, 0.1),
+ 'split_type': 'random',
+ 'target_columns': ['label'],
+ 'target_weights': None,
+ 'task_names': ['label'],
+ 'tau': (0.0, 5.0),
+ 'test': False,
+ 'test_fold_index': None,
+ 'train_data_size': None,
+ 'undirected': False,
+ 'use_input_features': False,
+ 'val_fold_index': None,
+ 'vocab_size': 31,
+ 'warmup_epochs': 2.0}
+Loading data
+Number of tasks = 1
+Fold 0
+Splitting data with seed 0
+Total size = 18,625 | train size = 18,625 | val size = 4,656 | test size = 1,290
+Fitting scaler
+Building model 0
+InteractionModel(
+  (embedding_xt): Embedding(31, 128)
+  (conv_in): Conv1d(500, 64, kernel_size=(1,), stride=(1,))
+  (convs): ModuleList(
+    (0-2): 3 x Conv1d(128, 256, kernel_size=(7,), stride=(1,), padding=(3,))
+  )
+  (rnns): ModuleList(
+    (0-2): 3 x GRU(64, 64, batch_first=True, bidirectional=True)
+  )
+  (fc1_xt): Linear(in_features=8192, out_features=300, bias=True)
+  (fc_mg): Linear(in_features=2048, out_features=300, bias=True)
+  (fc_residual_connection): Linear(in_features=128, out_features=64, bias=True)
+  (relu): ReLU()
+  (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  (do): Dropout(p=0.1, inplace=False)
+  (CAB): CrossAttentionBlock(
+    (att): AttentionBlock(
+      (f_q): Linear(in_features=300, out_features=300, bias=True)
+      (f_k): Linear(in_features=300, out_features=300, bias=True)
+      (f_v): Linear(in_features=300, out_features=300, bias=True)
+      (fc): Linear(in_features=300, out_features=300, bias=True)
+      (do): Dropout(p=0.1, inplace=False)
+    )
+  )
+  (encoder): MPN(
+    (encoder): ModuleList(
+      (0): MPNEncoder(
+        (dropout_layer): Dropout(p=0.1, inplace=False)
+        (act_func): ReLU()
+        (W_i): Linear(in_features=147, out_features=300, bias=False)
+        (W_h): Linear(in_features=300, out_features=300, bias=False)
+        (W_o): Linear(in_features=433, out_features=300, bias=True)
+      )
+    )
+  )
+  (ffn): Sequential(
+    (0): Dropout(p=0.1, inplace=False)
+    (1): Linear(in_features=300, out_features=300, bias=True)
+    (2): ReLU()
+    (3): Dropout(p=0.1, inplace=False)
+    (4): Linear(in_features=300, out_features=1, bias=True)
+  )
+)
+Number of parameters = 4,672,073
+Moving model to cuda
+Resuming model 0 after epoch 111 (best so far: epoch 84)
+Epoch 112
+/content/perceiver_gpu/model_2d/chemprop/train/train.py:73: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at /pytorch/torch/csrc/utils/tensor_new.cpp:253.)
+  sequence_tensor = torch.LongTensor(new_ar)
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.533517
+Epoch 113
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.516263
+Epoch 114
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.519133
+Epoch 115
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.528728
+Epoch 116
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.514329
+Epoch 117
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.507963
+Epoch 118
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.530403
+Epoch 119
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.510849
+Epoch 120
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.519678
+Epoch 121
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.514984
+Epoch 122
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.507341
+Epoch 123
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.531071
+Epoch 124
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.484582
+Epoch 125
+Exception ignored in atexit callback <function _exit_function at 0x7d57f3482480>:
+Exception ignored in atexit callback <function _exit_function at 0x7d57f3482480>:
+Traceback (most recent call last):
+Exception ignored in atexit callback <function _exit_function at 0x7d57f3482480>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 431, in _exit_function
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 431, in _exit_function
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 431, in _exit_function
+    _run_finalizers()
+    _run_finalizers()
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 371, in _run_finalizers
+    _run_finalizers()
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 371, in _run_finalizers
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 371, in _run_finalizers
+    finalizer()
+    finalizer()
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 295, in __call__
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 295, in __call__
+    finalizer()
+    res = self._callback(*self._args, **self._kwargs)
+    res = self._callback(*self._args, **self._kwargs)
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 295, in __call__
+  File "/usr/lib/python3.13/multiprocessing/queues.py", line 217, in _finalize_join
+  File "/usr/lib/python3.13/multiprocessing/queues.py", line 217, in _finalize_join
+    res = self._callback(*self._args, **self._kwargs)
+  File "/usr/lib/python3.13/multiprocessing/queues.py", line 217, in _finalize_join
+    thread.join()
+  File "/usr/lib/python3.13/threading.py", line 1095, in join
+    thread.join()
+    thread.join()
+  File "/usr/lib/python3.13/threading.py", line 1095, in join
+  File "/usr/lib/python3.13/threading.py", line 1095, in join
+    self._handle.join(timeout)
+KeyboardInterrupt: 
+    self._handle.join(timeout)
+    self._handle.join(timeout)
+KeyboardInterrupt: 
+KeyboardInterrupt: 
+Command line
+python /content/perceiver_gpu/model_2d/train.py --data_path /content/perceiver_gpu/data/splits/metz/novel_pair/fold0_train.csv --separate_val_path /content/perceiver_gpu/data/splits/metz/novel_pair/fold0_val.csv --separate_test_path /content/perceiver_gpu/data/splits/metz/novel_pair/fold0_test.csv --dataset_type regression --target_columns label --metric mse --epochs 150 --ensemble_size 1 --num_folds 1 --batch_size 50 --dropout 0.1 --aggregation mean --seed 0 --pytorch_seed 0 --num_workers 3 --save_dir /content/drive/MyDrive/perceiver_cpi_colab/runs/metz --save_preds --alpha 0.5 --beta 0.5 --resume
+Args
+{'activation': 'ReLU',
+ 'aggregation': 'mean',
+ 'aggregation_norm': 100,
+ 'alpha': 0.5,
+ 'atom_descriptor_scaling': True,
+ 'atom_descriptors': None,
+ 'atom_descriptors_path': None,
+ 'atom_descriptors_size': 0,
+ 'atom_features_size': 0,
+ 'atom_messages': False,
+ 'batch_size': 50,
+ 'beta': 0.5,
+ 'bias': False,
+ 'bond_feature_scaling': True,
+ 'bond_features_path': None,
+ 'bond_features_size': 0,
+ 'cache_cutoff': 10000,
+ 'checkpoint_dir': None,
+ 'checkpoint_frzn': None,
+ 'checkpoint_path': None,
+ 'checkpoint_paths': None,
+ 'class_balance': False,
+ 'config_path': None,
+ 'crossval_index_dir': None,
+ 'crossval_index_file': None,
+ 'crossval_index_sets': None,
+ 'cuda': True,
+ 'data_path': '/content/perceiver_gpu/data/splits/metz/novel_pair/fold0_train.csv',
+ 'data_weights_path': None,
+ 'dataset_type': 'regression',
+ 'depth': 3,
+ 'device': device(type='cuda'),
+ 'dropout': 0.1,
+ 'empty_cache': False,
+ 'ensemble_size': 1,
+ 'epochs': 150,
+ 'explicit_h': False,
+ 'extra_metrics': [],
+ 'features_generator': None,
+ 'features_only': False,
+ 'features_path': None,
+ 'features_scaling': True,
+ 'features_size': None,
+ 'ffn_hidden_size': 300,
+ 'ffn_num_layers': 2,
+ 'final_lr': 0.0001,
+ 'folds_file': None,
+ 'freeze_first_only': False,
+ 'frzn_ffn_layers': 0,
+ 'gpu': None,
+ 'grad_clip': None,
+ 'hidden_size': 300,
+ 'ignore_columns': None,
+ 'init_lr': 0.0001,
+ 'kernel_size': 7,
+ 'lamp_lr': 0.0025,
+ 'log_frequency': 10,
+ 'max_data_size': None,
+ 'max_lr': 0.001,
+ 'metric': 'mse',
+ 'metrics': ['mse'],
+ 'minimize_score': True,
+ 'mpn_shared': False,
+ 'multiclass_num_classes': 3,
+ 'no_atom_descriptor_scaling': False,
+ 'no_bond_features_scaling': False,
+ 'no_cache_mol': False,
+ 'no_cuda': False,
+ 'no_features_scaling': False,
+ 'num_folds': 1,
+ 'num_lrs': 1,
+ 'num_tasks': 1,
+ 'num_workers': 3,
+ 'number_of_molecules': 1,
+ 'overwrite_default_atom_features': False,
+ 'overwrite_default_bond_features': False,
+ 'prot_1d_out': 64,
+ 'prot_1dcnn_num': 3,
+ 'prot_hidden': 128,
+ 'pytorch_seed': 0,
+ 'quiet': False,
+ 'reaction': False,
+ 'reaction_mode': 'reac_diff',
+ 'resume': True,
+ 'resume_experiment': False,
+ 'save_dir': '/content/drive/MyDrive/perceiver_cpi_colab/runs/metz',
+ 'save_preds': True,
+ 'save_smiles_splits': False,
+ 'seed': 0,
+ 'separate_test_atom_descriptors_path': None,
+ 'separate_test_bond_features_path': None,
+ 'separate_test_features_path': None,
+ 'separate_test_path': '/content/perceiver_gpu/data/splits/metz/novel_pair/fold0_test.csv',
+ 'separate_val_atom_descriptors_path': None,
+ 'separate_val_bond_features_path': None,
+ 'separate_val_features_path': None,
+ 'separate_val_path': '/content/perceiver_gpu/data/splits/metz/novel_pair/fold0_val.csv',
+ 'sequence_length': 500,
+ 'show_individual_scores': False,
+ 'smiles_columns': ['smiles'],
+ 'split_sizes': (0.8, 0.1, 0.1),
+ 'split_type': 'random',
+ 'target_columns': ['label'],
+ 'target_weights': None,
+ 'task_names': ['label'],
+ 'tau': (0.0, 5.0),
+ 'test': False,
+ 'test_fold_index': None,
+ 'train_data_size': None,
+ 'undirected': False,
+ 'use_input_features': False,
+ 'val_fold_index': None,
+ 'vocab_size': 31,
+ 'warmup_epochs': 2.0}
+Loading data
+Number of tasks = 1
+Fold 0
+Splitting data with seed 0
+Total size = 18,625 | train size = 18,625 | val size = 4,656 | test size = 1,290
+Fitting scaler
+Building model 0
+InteractionModel(
+  (embedding_xt): Embedding(31, 128)
+  (conv_in): Conv1d(500, 64, kernel_size=(1,), stride=(1,))
+  (convs): ModuleList(
+    (0-2): 3 x Conv1d(128, 256, kernel_size=(7,), stride=(1,), padding=(3,))
+  )
+  (rnns): ModuleList(
+    (0-2): 3 x GRU(64, 64, batch_first=True, bidirectional=True)
+  )
+  (fc1_xt): Linear(in_features=8192, out_features=300, bias=True)
+  (fc_mg): Linear(in_features=2048, out_features=300, bias=True)
+  (fc_residual_connection): Linear(in_features=128, out_features=64, bias=True)
+  (relu): ReLU()
+  (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  (do): Dropout(p=0.1, inplace=False)
+  (CAB): CrossAttentionBlock(
+    (att): AttentionBlock(
+      (f_q): Linear(in_features=300, out_features=300, bias=True)
+      (f_k): Linear(in_features=300, out_features=300, bias=True)
+      (f_v): Linear(in_features=300, out_features=300, bias=True)
+      (fc): Linear(in_features=300, out_features=300, bias=True)
+      (do): Dropout(p=0.1, inplace=False)
+    )
+  )
+  (encoder): MPN(
+    (encoder): ModuleList(
+      (0): MPNEncoder(
+        (dropout_layer): Dropout(p=0.1, inplace=False)
+        (act_func): ReLU()
+        (W_i): Linear(in_features=147, out_features=300, bias=False)
+        (W_h): Linear(in_features=300, out_features=300, bias=False)
+        (W_o): Linear(in_features=433, out_features=300, bias=True)
+      )
+    )
+  )
+  (ffn): Sequential(
+    (0): Dropout(p=0.1, inplace=False)
+    (1): Linear(in_features=300, out_features=300, bias=True)
+    (2): ReLU()
+    (3): Dropout(p=0.1, inplace=False)
+    (4): Linear(in_features=300, out_features=1, bias=True)
+  )
+)
+Number of parameters = 4,672,073
+Moving model to cuda
+Resuming model 0 after epoch 124 (best so far: epoch 124)
+Epoch 125
+/content/perceiver_gpu/model_2d/chemprop/train/train.py:73: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at /pytorch/torch/csrc/utils/tensor_new.cpp:253.)
+  sequence_tensor = torch.LongTensor(new_ar)
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.472551
+Epoch 126
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.464911
+Epoch 127
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.483647
+Epoch 128
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.464931
+Epoch 129
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.465111
+Epoch 130
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.456196
+Epoch 131
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.460770
+Epoch 132
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.462857
+Epoch 133
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.455759
+Epoch 134
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.456565
+Epoch 135
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.460680
+Epoch 136
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.445171
+Epoch 137
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.447603
+Epoch 138
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.454428
+Epoch 139
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.445141
+Epoch 140
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.442773
+Epoch 141
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.459936
+Epoch 142
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.445799
+Epoch 143
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.449238
+Epoch 144
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.450018
+Epoch 145
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.435637
+Epoch 146
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.451008
+Epoch 147
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.450751
+Epoch 148
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.445600
+Epoch 149
+  0%|          | 0/94 [00:00<?, ?it/s]                                      Validation mse = 0.441458
+Model 0 best validation mse = 0.435637 on epoch 145
+Loading pretrained parameter "embedding_xt.weight".
+Loading pretrained parameter "conv_in.weight".
+Loading pretrained parameter "conv_in.bias".
+Loading pretrained parameter "convs.0.weight".
+Loading pretrained parameter "convs.0.bias".
+Loading pretrained parameter "convs.1.weight".
+Loading pretrained parameter "convs.1.bias".
+Loading pretrained parameter "convs.2.weight".
+Loading pretrained parameter "convs.2.bias".
+Loading pretrained parameter "rnns.0.weight_ih_l0".
+Loading pretrained parameter "rnns.0.weight_hh_l0".
+Loading pretrained parameter "rnns.0.bias_ih_l0".
+Loading pretrained parameter "rnns.0.bias_hh_l0".
+Loading pretrained parameter "rnns.0.weight_ih_l0_reverse".
+Loading pretrained parameter "rnns.0.weight_hh_l0_reverse".
+Loading pretrained parameter "rnns.0.bias_ih_l0_reverse".
+Loading pretrained parameter "rnns.0.bias_hh_l0_reverse".
+Loading pretrained parameter "rnns.1.weight_ih_l0".
+Loading pretrained parameter "rnns.1.weight_hh_l0".
+Loading pretrained parameter "rnns.1.bias_ih_l0".
+Loading pretrained parameter "rnns.1.bias_hh_l0".
+Loading pretrained parameter "rnns.1.weight_ih_l0_reverse".
+Loading pretrained parameter "rnns.1.weight_hh_l0_reverse".
+Loading pretrained parameter "rnns.1.bias_ih_l0_reverse".
+Loading pretrained parameter "rnns.1.bias_hh_l0_reverse".
+Loading pretrained parameter "rnns.2.weight_ih_l0".
+Loading pretrained parameter "rnns.2.weight_hh_l0".
+Loading pretrained parameter "rnns.2.bias_ih_l0".
+Loading pretrained parameter "rnns.2.bias_hh_l0".
+Loading pretrained parameter "rnns.2.weight_ih_l0_reverse".
+Loading pretrained parameter "rnns.2.weight_hh_l0_reverse".
+Loading pretrained parameter "rnns.2.bias_ih_l0_reverse".
+Loading pretrained parameter "rnns.2.bias_hh_l0_reverse".
+Loading pretrained parameter "fc1_xt.weight".
+Loading pretrained parameter "fc1_xt.bias".
+Loading pretrained parameter "fc_mg.weight".
+Loading pretrained parameter "fc_mg.bias".
+Loading pretrained parameter "fc_residual_connection.weight".
+Loading pretrained parameter "fc_residual_connection.bias".
+Loading pretrained parameter "norm.weight".
+Loading pretrained parameter "norm.bias".
+Loading pretrained parameter "CAB.att.f_q.weight".
+Loading pretrained parameter "CAB.att.f_q.bias".
+Loading pretrained parameter "CAB.att.f_k.weight".
+Loading pretrained parameter "CAB.att.f_k.bias".
+Loading pretrained parameter "CAB.att.f_v.weight".
+Loading pretrained parameter "CAB.att.f_v.bias".
+Loading pretrained parameter "CAB.att.fc.weight".
+Loading pretrained parameter "CAB.att.fc.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "ffn.1.weight".
+Loading pretrained parameter "ffn.1.bias".
+Loading pretrained parameter "ffn.4.weight".
+Loading pretrained parameter "ffn.4.bias".
+Moving model to cuda
+  0%|          | 0/26 [00:00<?, ?it/s]                                      Model 0 test mse = 0.761952
+Ensemble test mse = 0.761952
+1-fold cross validation
+	Seed 0 ==> test mse = 0.761952
+Overall test mse = 0.761952 +/- 0.000000
+Overall test Cindex = 0.633722 +/- 0.000000 
+Elapsed time = 0:18:20

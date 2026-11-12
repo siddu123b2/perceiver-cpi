@@ -1,0 +1,13 @@
+Fold 0
+Fold 0
+Resuming model 0 after epoch 111 (best so far: epoch 84)
+Fold 0
+Resuming model 0 after epoch 124 (best so far: epoch 124)
+Model 0 best validation mse = 0.435637 on epoch 145
+Model 0 test mse = 0.761952
+Ensemble test mse = 0.761952
+1-fold cross validation
+	Seed 0 ==> test mse = 0.761952
+Overall test mse = 0.761952 +/- 0.000000
+Overall test Cindex = 0.633722 +/- 0.000000 
+Elapsed time = 0:18:20

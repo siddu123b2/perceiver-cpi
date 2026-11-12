@@ -1,0 +1,735 @@
+Command line
+python /content/perceiver_gpu/model_2d/train.py --data_path /content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_train.csv --separate_val_path /content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_val.csv --separate_test_path /content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_test.csv --dataset_type regression --target_columns label --metric mse --epochs 150 --ensemble_size 1 --num_folds 1 --batch_size 50 --dropout 0.1 --aggregation mean --seed 0 --pytorch_seed 0 --num_workers 3 --save_dir /content/drive/MyDrive/perceiver_cpi_colab/runs/kiba --save_preds --tau 11.1 12 --alpha 0.5 --beta 5 --resume
+Args
+{'activation': 'ReLU',
+ 'aggregation': 'mean',
+ 'aggregation_norm': 100,
+ 'alpha': 0.5,
+ 'atom_descriptor_scaling': True,
+ 'atom_descriptors': None,
+ 'atom_descriptors_path': None,
+ 'atom_descriptors_size': 0,
+ 'atom_features_size': 0,
+ 'atom_messages': False,
+ 'batch_size': 50,
+ 'beta': 5.0,
+ 'bias': False,
+ 'bond_feature_scaling': True,
+ 'bond_features_path': None,
+ 'bond_features_size': 0,
+ 'cache_cutoff': 10000,
+ 'checkpoint_dir': None,
+ 'checkpoint_frzn': None,
+ 'checkpoint_path': None,
+ 'checkpoint_paths': None,
+ 'class_balance': False,
+ 'config_path': None,
+ 'crossval_index_dir': None,
+ 'crossval_index_file': None,
+ 'crossval_index_sets': None,
+ 'cuda': True,
+ 'data_path': '/content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_train.csv',
+ 'data_weights_path': None,
+ 'dataset_type': 'regression',
+ 'depth': 3,
+ 'device': device(type='cuda'),
+ 'dropout': 0.1,
+ 'empty_cache': False,
+ 'ensemble_size': 1,
+ 'epochs': 150,
+ 'explicit_h': False,
+ 'extra_metrics': [],
+ 'features_generator': None,
+ 'features_only': False,
+ 'features_path': None,
+ 'features_scaling': True,
+ 'features_size': None,
+ 'ffn_hidden_size': 300,
+ 'ffn_num_layers': 2,
+ 'final_lr': 0.0001,
+ 'folds_file': None,
+ 'freeze_first_only': False,
+ 'frzn_ffn_layers': 0,
+ 'gpu': None,
+ 'grad_clip': None,
+ 'hidden_size': 300,
+ 'ignore_columns': None,
+ 'init_lr': 0.0001,
+ 'kernel_size': 7,
+ 'lamp_lr': 0.0025,
+ 'log_frequency': 10,
+ 'max_data_size': None,
+ 'max_lr': 0.001,
+ 'metric': 'mse',
+ 'metrics': ['mse'],
+ 'minimize_score': True,
+ 'mpn_shared': False,
+ 'multiclass_num_classes': 3,
+ 'no_atom_descriptor_scaling': False,
+ 'no_bond_features_scaling': False,
+ 'no_cache_mol': False,
+ 'no_cuda': False,
+ 'no_features_scaling': False,
+ 'num_folds': 1,
+ 'num_lrs': 1,
+ 'num_tasks': 1,
+ 'num_workers': 3,
+ 'number_of_molecules': 1,
+ 'overwrite_default_atom_features': False,
+ 'overwrite_default_bond_features': False,
+ 'prot_1d_out': 64,
+ 'prot_1dcnn_num': 3,
+ 'prot_hidden': 128,
+ 'pytorch_seed': 0,
+ 'quiet': False,
+ 'reaction': False,
+ 'reaction_mode': 'reac_diff',
+ 'resume': True,
+ 'resume_experiment': False,
+ 'save_dir': '/content/drive/MyDrive/perceiver_cpi_colab/runs/kiba',
+ 'save_preds': True,
+ 'save_smiles_splits': False,
+ 'seed': 0,
+ 'separate_test_atom_descriptors_path': None,
+ 'separate_test_bond_features_path': None,
+ 'separate_test_features_path': None,
+ 'separate_test_path': '/content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_test.csv',
+ 'separate_val_atom_descriptors_path': None,
+ 'separate_val_bond_features_path': None,
+ 'separate_val_features_path': None,
+ 'separate_val_path': '/content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_val.csv',
+ 'sequence_length': 500,
+ 'show_individual_scores': False,
+ 'smiles_columns': ['smiles'],
+ 'split_sizes': (0.8, 0.1, 0.1),
+ 'split_type': 'random',
+ 'target_columns': ['label'],
+ 'target_weights': None,
+ 'task_names': ['label'],
+ 'tau': (11.1, 12.0),
+ 'test': False,
+ 'test_fold_index': None,
+ 'train_data_size': None,
+ 'undirected': False,
+ 'use_input_features': False,
+ 'val_fold_index': None,
+ 'vocab_size': 31,
+ 'warmup_epochs': 2.0}
+Loading data
+Number of tasks = 1
+Fold 0
+Splitting data with seed 0
+Total size = 61,382 | train size = 61,382 | val size = 15,346 | test size = 4,423
+Fitting scaler
+Building model 0
+InteractionModel(
+  (embedding_xt): Embedding(31, 128)
+  (conv_in): Conv1d(500, 64, kernel_size=(1,), stride=(1,))
+  (convs): ModuleList(
+    (0-2): 3 x Conv1d(128, 256, kernel_size=(7,), stride=(1,), padding=(3,))
+  )
+  (rnns): ModuleList(
+    (0-2): 3 x GRU(64, 64, batch_first=True, bidirectional=True)
+  )
+  (fc1_xt): Linear(in_features=8192, out_features=300, bias=True)
+  (fc_mg): Linear(in_features=2048, out_features=300, bias=True)
+  (fc_residual_connection): Linear(in_features=128, out_features=64, bias=True)
+  (relu): ReLU()
+  (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  (do): Dropout(p=0.1, inplace=False)
+  (CAB): CrossAttentionBlock(
+    (att): AttentionBlock(
+      (f_q): Linear(in_features=300, out_features=300, bias=True)
+      (f_k): Linear(in_features=300, out_features=300, bias=True)
+      (f_v): Linear(in_features=300, out_features=300, bias=True)
+      (fc): Linear(in_features=300, out_features=300, bias=True)
+      (do): Dropout(p=0.1, inplace=False)
+    )
+  )
+  (encoder): MPN(
+    (encoder): ModuleList(
+      (0): MPNEncoder(
+        (dropout_layer): Dropout(p=0.1, inplace=False)
+        (act_func): ReLU()
+        (W_i): Linear(in_features=147, out_features=300, bias=False)
+        (W_h): Linear(in_features=300, out_features=300, bias=False)
+        (W_o): Linear(in_features=433, out_features=300, bias=True)
+      )
+    )
+  )
+  (ffn): Sequential(
+    (0): Dropout(p=0.1, inplace=False)
+    (1): Linear(in_features=300, out_features=300, bias=True)
+    (2): ReLU()
+    (3): Dropout(p=0.1, inplace=False)
+    (4): Linear(in_features=300, out_features=1, bias=True)
+  )
+)
+Number of parameters = 4,672,073
+Moving model to cuda
+Epoch 0
+/content/perceiver_gpu/model_2d/chemprop/train/train.py:73: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at /pytorch/torch/csrc/utils/tensor_new.cpp:253.)
+  sequence_tensor = torch.LongTensor(new_ar)
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.846236
+Epoch 1
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.676369
+Epoch 2
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.546881
+Epoch 3
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.447189
+Epoch 4
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.466340
+Epoch 5
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.450093
+Epoch 6
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.482002
+Epoch 7
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.616404
+Epoch 8
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.431606
+Epoch 9
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.843646
+Epoch 10
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.450069
+Epoch 11
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.423448
+Epoch 12
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.619954
+Epoch 13
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.405515
+Epoch 14
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.397590
+Epoch 15
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.394943
+Epoch 16
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.395483
+Epoch 17
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.399665
+Epoch 18
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.398484
+Epoch 19
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.388113
+Epoch 20
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.406357
+Epoch 21
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.410530
+Epoch 22
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.390296
+Epoch 23
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.387757
+Epoch 24
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.454960
+Epoch 25
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.443397
+Epoch 26
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.394706
+Epoch 27
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.382772
+Epoch 28
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.385824
+Epoch 29
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.406013
+Epoch 30
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.387349
+Epoch 31
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.393792
+Epoch 32
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.401292
+Epoch 33
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.392629
+Epoch 34
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.407462
+Epoch 35
+Exception ignored in atexit callback <function _exit_function at 0x795e22c8e480>:
+Traceback (most recent call last):
+Exception ignored in atexit callback <function _exit_function at 0x795e22c8e480>:
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 431, in _exit_function
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 431, in _exit_function
+    _run_finalizers()
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 371, in _run_finalizers
+    _run_finalizers()
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 371, in _run_finalizers
+    finalizer()
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 295, in __call__
+    finalizer()
+    res = self._callback(*self._args, **self._kwargs)
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 295, in __call__
+  File "/usr/lib/python3.13/multiprocessing/queues.py", line 217, in _finalize_join
+    res = self._callback(*self._args, **self._kwargs)
+  File "/usr/lib/python3.13/multiprocessing/queues.py", line 217, in _finalize_join
+    thread.join()
+    thread.join()
+  File "/usr/lib/python3.13/threading.py", line 1095, in join
+  File "/usr/lib/python3.13/threading.py", line 1095, in join
+    self._handle.join(timeout)
+KeyboardInterrupt: 
+    self._handle.join(timeout)
+KeyboardInterrupt: 
+Command line
+python /content/perceiver_gpu/model_2d/train.py --data_path /content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_train.csv --separate_val_path /content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_val.csv --separate_test_path /content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_test.csv --dataset_type regression --target_columns label --metric mse --epochs 150 --ensemble_size 1 --num_folds 1 --batch_size 50 --dropout 0.1 --aggregation mean --seed 0 --pytorch_seed 0 --num_workers 3 --save_dir /content/drive/MyDrive/perceiver_cpi_colab/runs/kiba --save_preds --tau 11.1 12 --alpha 0.5 --beta 5 --resume
+Args
+{'activation': 'ReLU',
+ 'aggregation': 'mean',
+ 'aggregation_norm': 100,
+ 'alpha': 0.5,
+ 'atom_descriptor_scaling': True,
+ 'atom_descriptors': None,
+ 'atom_descriptors_path': None,
+ 'atom_descriptors_size': 0,
+ 'atom_features_size': 0,
+ 'atom_messages': False,
+ 'batch_size': 50,
+ 'beta': 5.0,
+ 'bias': False,
+ 'bond_feature_scaling': True,
+ 'bond_features_path': None,
+ 'bond_features_size': 0,
+ 'cache_cutoff': 10000,
+ 'checkpoint_dir': None,
+ 'checkpoint_frzn': None,
+ 'checkpoint_path': None,
+ 'checkpoint_paths': None,
+ 'class_balance': False,
+ 'config_path': None,
+ 'crossval_index_dir': None,
+ 'crossval_index_file': None,
+ 'crossval_index_sets': None,
+ 'cuda': True,
+ 'data_path': '/content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_train.csv',
+ 'data_weights_path': None,
+ 'dataset_type': 'regression',
+ 'depth': 3,
+ 'device': device(type='cuda'),
+ 'dropout': 0.1,
+ 'empty_cache': False,
+ 'ensemble_size': 1,
+ 'epochs': 150,
+ 'explicit_h': False,
+ 'extra_metrics': [],
+ 'features_generator': None,
+ 'features_only': False,
+ 'features_path': None,
+ 'features_scaling': True,
+ 'features_size': None,
+ 'ffn_hidden_size': 300,
+ 'ffn_num_layers': 2,
+ 'final_lr': 0.0001,
+ 'folds_file': None,
+ 'freeze_first_only': False,
+ 'frzn_ffn_layers': 0,
+ 'gpu': None,
+ 'grad_clip': None,
+ 'hidden_size': 300,
+ 'ignore_columns': None,
+ 'init_lr': 0.0001,
+ 'kernel_size': 7,
+ 'lamp_lr': 0.0025,
+ 'log_frequency': 10,
+ 'max_data_size': None,
+ 'max_lr': 0.001,
+ 'metric': 'mse',
+ 'metrics': ['mse'],
+ 'minimize_score': True,
+ 'mpn_shared': False,
+ 'multiclass_num_classes': 3,
+ 'no_atom_descriptor_scaling': False,
+ 'no_bond_features_scaling': False,
+ 'no_cache_mol': False,
+ 'no_cuda': False,
+ 'no_features_scaling': False,
+ 'num_folds': 1,
+ 'num_lrs': 1,
+ 'num_tasks': 1,
+ 'num_workers': 3,
+ 'number_of_molecules': 1,
+ 'overwrite_default_atom_features': False,
+ 'overwrite_default_bond_features': False,
+ 'prot_1d_out': 64,
+ 'prot_1dcnn_num': 3,
+ 'prot_hidden': 128,
+ 'pytorch_seed': 0,
+ 'quiet': False,
+ 'reaction': False,
+ 'reaction_mode': 'reac_diff',
+ 'resume': True,
+ 'resume_experiment': False,
+ 'save_dir': '/content/drive/MyDrive/perceiver_cpi_colab/runs/kiba',
+ 'save_preds': True,
+ 'save_smiles_splits': False,
+ 'seed': 0,
+ 'separate_test_atom_descriptors_path': None,
+ 'separate_test_bond_features_path': None,
+ 'separate_test_features_path': None,
+ 'separate_test_path': '/content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_test.csv',
+ 'separate_val_atom_descriptors_path': None,
+ 'separate_val_bond_features_path': None,
+ 'separate_val_features_path': None,
+ 'separate_val_path': '/content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_val.csv',
+ 'sequence_length': 500,
+ 'show_individual_scores': False,
+ 'smiles_columns': ['smiles'],
+ 'split_sizes': (0.8, 0.1, 0.1),
+ 'split_type': 'random',
+ 'target_columns': ['label'],
+ 'target_weights': None,
+ 'task_names': ['label'],
+ 'tau': (11.1, 12.0),
+ 'test': False,
+ 'test_fold_index': None,
+ 'train_data_size': None,
+ 'undirected': False,
+ 'use_input_features': False,
+ 'val_fold_index': None,
+ 'vocab_size': 31,
+ 'warmup_epochs': 2.0}
+Loading data
+Number of tasks = 1
+Fold 0
+Splitting data with seed 0
+Total size = 61,382 | train size = 61,382 | val size = 15,346 | test size = 4,423
+Fitting scaler
+Building model 0
+InteractionModel(
+  (embedding_xt): Embedding(31, 128)
+  (conv_in): Conv1d(500, 64, kernel_size=(1,), stride=(1,))
+  (convs): ModuleList(
+    (0-2): 3 x Conv1d(128, 256, kernel_size=(7,), stride=(1,), padding=(3,))
+  )
+  (rnns): ModuleList(
+    (0-2): 3 x GRU(64, 64, batch_first=True, bidirectional=True)
+  )
+  (fc1_xt): Linear(in_features=8192, out_features=300, bias=True)
+  (fc_mg): Linear(in_features=2048, out_features=300, bias=True)
+  (fc_residual_connection): Linear(in_features=128, out_features=64, bias=True)
+  (relu): ReLU()
+  (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  (do): Dropout(p=0.1, inplace=False)
+  (CAB): CrossAttentionBlock(
+    (att): AttentionBlock(
+      (f_q): Linear(in_features=300, out_features=300, bias=True)
+      (f_k): Linear(in_features=300, out_features=300, bias=True)
+      (f_v): Linear(in_features=300, out_features=300, bias=True)
+      (fc): Linear(in_features=300, out_features=300, bias=True)
+      (do): Dropout(p=0.1, inplace=False)
+    )
+  )
+  (encoder): MPN(
+    (encoder): ModuleList(
+      (0): MPNEncoder(
+        (dropout_layer): Dropout(p=0.1, inplace=False)
+        (act_func): ReLU()
+        (W_i): Linear(in_features=147, out_features=300, bias=False)
+        (W_h): Linear(in_features=300, out_features=300, bias=False)
+        (W_o): Linear(in_features=433, out_features=300, bias=True)
+      )
+    )
+  )
+  (ffn): Sequential(
+    (0): Dropout(p=0.1, inplace=False)
+    (1): Linear(in_features=300, out_features=300, bias=True)
+    (2): ReLU()
+    (3): Dropout(p=0.1, inplace=False)
+    (4): Linear(in_features=300, out_features=1, bias=True)
+  )
+)
+Number of parameters = 4,672,073
+Moving model to cuda
+Resuming model 0 after epoch 34 (best so far: epoch 27)
+Epoch 35
+/content/perceiver_gpu/model_2d/chemprop/train/train.py:73: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at /pytorch/torch/csrc/utils/tensor_new.cpp:253.)
+  sequence_tensor = torch.LongTensor(new_ar)
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.400229
+Epoch 36
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.403729
+Epoch 37
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.373454
+Epoch 38
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.385178
+Epoch 39
+Exception ignored in atexit callback <function _exit_function at 0x783cb6986480>:
+Exception ignored in atexit callback <function _exit_function at 0x783cb6986480>:
+Traceback (most recent call last):
+Exception ignored in atexit callback <function _exit_function at 0x783cb6986480>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 431, in _exit_function
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 431, in _exit_function
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 431, in _exit_function
+    _run_finalizers()
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 371, in _run_finalizers
+    _run_finalizers()
+    _run_finalizers()
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 371, in _run_finalizers
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 371, in _run_finalizers
+    finalizer()
+    finalizer()
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 295, in __call__
+    finalizer()
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 295, in __call__
+  File "/usr/lib/python3.13/multiprocessing/util.py", line 295, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+  File "/usr/lib/python3.13/multiprocessing/queues.py", line 217, in _finalize_join
+    res = self._callback(*self._args, **self._kwargs)
+  File "/usr/lib/python3.13/multiprocessing/queues.py", line 217, in _finalize_join
+    res = self._callback(*self._args, **self._kwargs)
+  File "/usr/lib/python3.13/multiprocessing/queues.py", line 217, in _finalize_join
+    thread.join()
+  File "/usr/lib/python3.13/threading.py", line 1095, in join
+    thread.join()
+  File "/usr/lib/python3.13/threading.py", line 1095, in join
+    thread.join()
+  File "/usr/lib/python3.13/threading.py", line 1095, in join
+    self._handle.join(timeout)
+    self._handle.join(timeout)
+KeyboardInterrupt: 
+    self._handle.join(timeout)
+KeyboardInterrupt: 
+KeyboardInterrupt: 
+Command line
+python /content/perceiver_gpu/model_2d/train.py --data_path /content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_train.csv --separate_val_path /content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_val.csv --separate_test_path /content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_test.csv --dataset_type regression --target_columns label --metric mse --epochs 150 --ensemble_size 1 --num_folds 1 --batch_size 50 --dropout 0.1 --aggregation mean --seed 0 --pytorch_seed 0 --num_workers 3 --save_dir /content/drive/MyDrive/perceiver_cpi_colab/runs/kiba --save_preds --tau 11.1 12 --alpha 0.5 --beta 5 --resume
+Args
+{'activation': 'ReLU',
+ 'aggregation': 'mean',
+ 'aggregation_norm': 100,
+ 'alpha': 0.5,
+ 'atom_descriptor_scaling': True,
+ 'atom_descriptors': None,
+ 'atom_descriptors_path': None,
+ 'atom_descriptors_size': 0,
+ 'atom_features_size': 0,
+ 'atom_messages': False,
+ 'batch_size': 50,
+ 'beta': 5.0,
+ 'bias': False,
+ 'bond_feature_scaling': True,
+ 'bond_features_path': None,
+ 'bond_features_size': 0,
+ 'cache_cutoff': 10000,
+ 'checkpoint_dir': None,
+ 'checkpoint_frzn': None,
+ 'checkpoint_path': None,
+ 'checkpoint_paths': None,
+ 'class_balance': False,
+ 'config_path': None,
+ 'crossval_index_dir': None,
+ 'crossval_index_file': None,
+ 'crossval_index_sets': None,
+ 'cuda': True,
+ 'data_path': '/content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_train.csv',
+ 'data_weights_path': None,
+ 'dataset_type': 'regression',
+ 'depth': 3,
+ 'device': device(type='cuda'),
+ 'dropout': 0.1,
+ 'empty_cache': False,
+ 'ensemble_size': 1,
+ 'epochs': 150,
+ 'explicit_h': False,
+ 'extra_metrics': [],
+ 'features_generator': None,
+ 'features_only': False,
+ 'features_path': None,
+ 'features_scaling': True,
+ 'features_size': None,
+ 'ffn_hidden_size': 300,
+ 'ffn_num_layers': 2,
+ 'final_lr': 0.0001,
+ 'folds_file': None,
+ 'freeze_first_only': False,
+ 'frzn_ffn_layers': 0,
+ 'gpu': None,
+ 'grad_clip': None,
+ 'hidden_size': 300,
+ 'ignore_columns': None,
+ 'init_lr': 0.0001,
+ 'kernel_size': 7,
+ 'lamp_lr': 0.0025,
+ 'log_frequency': 10,
+ 'max_data_size': None,
+ 'max_lr': 0.001,
+ 'metric': 'mse',
+ 'metrics': ['mse'],
+ 'minimize_score': True,
+ 'mpn_shared': False,
+ 'multiclass_num_classes': 3,
+ 'no_atom_descriptor_scaling': False,
+ 'no_bond_features_scaling': False,
+ 'no_cache_mol': False,
+ 'no_cuda': False,
+ 'no_features_scaling': False,
+ 'num_folds': 1,
+ 'num_lrs': 1,
+ 'num_tasks': 1,
+ 'num_workers': 3,
+ 'number_of_molecules': 1,
+ 'overwrite_default_atom_features': False,
+ 'overwrite_default_bond_features': False,
+ 'prot_1d_out': 64,
+ 'prot_1dcnn_num': 3,
+ 'prot_hidden': 128,
+ 'pytorch_seed': 0,
+ 'quiet': False,
+ 'reaction': False,
+ 'reaction_mode': 'reac_diff',
+ 'resume': True,
+ 'resume_experiment': False,
+ 'save_dir': '/content/drive/MyDrive/perceiver_cpi_colab/runs/kiba',
+ 'save_preds': True,
+ 'save_smiles_splits': False,
+ 'seed': 0,
+ 'separate_test_atom_descriptors_path': None,
+ 'separate_test_bond_features_path': None,
+ 'separate_test_features_path': None,
+ 'separate_test_path': '/content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_test.csv',
+ 'separate_val_atom_descriptors_path': None,
+ 'separate_val_bond_features_path': None,
+ 'separate_val_features_path': None,
+ 'separate_val_path': '/content/perceiver_gpu/data/splits/kiba/novel_pair/fold0_val.csv',
+ 'sequence_length': 500,
+ 'show_individual_scores': False,
+ 'smiles_columns': ['smiles'],
+ 'split_sizes': (0.8, 0.1, 0.1),
+ 'split_type': 'random',
+ 'target_columns': ['label'],
+ 'target_weights': None,
+ 'task_names': ['label'],
+ 'tau': (11.1, 12.0),
+ 'test': False,
+ 'test_fold_index': None,
+ 'train_data_size': None,
+ 'undirected': False,
+ 'use_input_features': False,
+ 'val_fold_index': None,
+ 'vocab_size': 31,
+ 'warmup_epochs': 2.0}
+Loading data
+Number of tasks = 1
+Fold 0
+Splitting data with seed 0
+Total size = 61,382 | train size = 61,382 | val size = 15,346 | test size = 4,423
+Fitting scaler
+Building model 0
+InteractionModel(
+  (embedding_xt): Embedding(31, 128)
+  (conv_in): Conv1d(500, 64, kernel_size=(1,), stride=(1,))
+  (convs): ModuleList(
+    (0-2): 3 x Conv1d(128, 256, kernel_size=(7,), stride=(1,), padding=(3,))
+  )
+  (rnns): ModuleList(
+    (0-2): 3 x GRU(64, 64, batch_first=True, bidirectional=True)
+  )
+  (fc1_xt): Linear(in_features=8192, out_features=300, bias=True)
+  (fc_mg): Linear(in_features=2048, out_features=300, bias=True)
+  (fc_residual_connection): Linear(in_features=128, out_features=64, bias=True)
+  (relu): ReLU()
+  (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  (do): Dropout(p=0.1, inplace=False)
+  (CAB): CrossAttentionBlock(
+    (att): AttentionBlock(
+      (f_q): Linear(in_features=300, out_features=300, bias=True)
+      (f_k): Linear(in_features=300, out_features=300, bias=True)
+      (f_v): Linear(in_features=300, out_features=300, bias=True)
+      (fc): Linear(in_features=300, out_features=300, bias=True)
+      (do): Dropout(p=0.1, inplace=False)
+    )
+  )
+  (encoder): MPN(
+    (encoder): ModuleList(
+      (0): MPNEncoder(
+        (dropout_layer): Dropout(p=0.1, inplace=False)
+        (act_func): ReLU()
+        (W_i): Linear(in_features=147, out_features=300, bias=False)
+        (W_h): Linear(in_features=300, out_features=300, bias=False)
+        (W_o): Linear(in_features=433, out_features=300, bias=True)
+      )
+    )
+  )
+  (ffn): Sequential(
+    (0): Dropout(p=0.1, inplace=False)
+    (1): Linear(in_features=300, out_features=300, bias=True)
+    (2): ReLU()
+    (3): Dropout(p=0.1, inplace=False)
+    (4): Linear(in_features=300, out_features=1, bias=True)
+  )
+)
+Number of parameters = 4,672,073
+Moving model to cuda
+Resuming model 0 after epoch 38 (best so far: epoch 37)
+Epoch 39
+/content/perceiver_gpu/model_2d/chemprop/train/train.py:73: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at /pytorch/torch/csrc/utils/tensor_new.cpp:253.)
+  sequence_tensor = torch.LongTensor(new_ar)
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.378371
+Epoch 40
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.377782
+Epoch 41
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.376965
+Epoch 42
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.380202
+Epoch 43
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.380699
+Epoch 44
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.397306
+Epoch 45
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.374255
+Epoch 46
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.377310
+Epoch 47
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.380269
+Epoch 48
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.377563
+Epoch 49
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.369487
+Epoch 50
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.360662
+Epoch 51
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.357082
+Epoch 52
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.346780
+Epoch 53
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.336858
+Epoch 54
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.333563
+Epoch 55
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.332251
+Epoch 56
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.323722
+Epoch 57
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.322665
+Epoch 58
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.312181
+Epoch 59
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.333105
+Epoch 60
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.318289
+Epoch 61
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.313616
+Epoch 62
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.323691
+Epoch 63
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.323410
+Epoch 64
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.310345
+Epoch 65
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.301950
+Epoch 66
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.308999
+Epoch 67
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.296024
+Epoch 68
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.296402
+Epoch 69
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.303770
+Epoch 70
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.291926
+Epoch 71
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.295414
+Epoch 72
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.289327
+Epoch 73
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.291236
+Epoch 74
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.291212
+Epoch 75
+  0%|          | 0/307 [00:00<?, ?it/s]                                       Validation mse = 0.290506
+Epoch 76

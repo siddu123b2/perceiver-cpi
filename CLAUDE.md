@@ -147,7 +147,7 @@ Every phase follows this loop: show a short plan → wait for OK → do it → r
 | 1 | Smoke test: unzip repo to `model_2d/`, install deps, train on `toy_dataset`, run `predict.py` | done (2026-10-29), see `experiments/phase1_smoke/` |
 | 2 | Data prep (§3 rules) → `data/davis.csv`, `data/kiba.csv`, `data/metz.csv`; before/after table; TAPE handles `X` | done (2026-10-29), see `data/prep_report.md` |
 | 3 | Splits (§4) + leakage checks | done (2026-10-29), see `data/splits/summary.md`. 90 files, 340 leakage checks pass, checker caught 6/6 planted breaks |
-| 4 | Baseline, **reduced scope** (user decision 2026-10-29): ONE model per dataset (Davis, KIBA, Metz), trained on novel-pair **fold 0**, **on the college's GPU via Google Colab** (changed 2026-11-03). Report MSE, CI, Pearson, Spearman, rm² next to the paper's | **in progress**: the Colab notebook and upload folder are built and tested offline. **Next:** the user uploads `experiments/phase4_baseline/colab_upload/perceiver_cpi_colab/` to Drive and shares it with the college (`colab/UPLOAD_GUIDE.md`). The college runs it. The user then extracts `results_to_copy.zip` into `experiments/phase4_baseline/`, and Claude evaluates (metrics, MC-dropout check, `results.md`) |
+| 4 | Baseline, **reduced scope** (user decision 2026-10-29): ONE model per dataset (Davis, KIBA, Metz), trained on novel-pair **fold 0**, on the college's GPU via Google Colab. Report MSE, CI, Pearson, Spearman, rm² next to the paper's | **done (2026-11-12)**, see `experiments/phase4_baseline/results.md`. All three trained 150 epochs on an NVIDIA L4; resume was used 8 times and worked. **Results are worse than the paper on every metric, and the models barely beat guessing the training average** (KIBA is worse than it). Rebuild the report with `evaluate.py` |
 | 5 | Improve accuracy, one change at a time, using validation only; log in `experiments/results_log.md` | todo |
 | 6 | Model registry (`models/<dataset>/` + `model_card.md`), `model_2d/predict_api.py`, `MODEL_SELECTION.md` | todo |
 | 7 | Backend: `/health`, `/models`, `/predict`, `/history`, `/predict-3d` placeholder; pytest | todo |
@@ -194,6 +194,18 @@ Phase details from the spec:
   - **Resume:** change 4 in `model_2d/CHANGES.md` (approved). **MC dropout:** `model_2d/mc_dropout.py`. The score is the normal prediction; the ± is the std of 30 dropout-on predictions (seed 0).
   - **Estimated time on the RTX laptop:** ~10–16 h in total (Davis ~2 h, Metz ~2.5 h, KIBA ~8 h), based on the CPU profile. `check_setup.py` measures the real speed.
   - **Measured on CPU (Phase 3):** 1 epoch of Davis fold 0 = 3 min 50 s. Profile: ~80% of the time is the network (GPU helps), ~20% is CPU-side batch preparation (GPU doesn't).
+- **Phase 4 results (2026-11-12).** Trained on the college's NVIDIA L4 (torch 2.14.1+cu130, Python 3.13). Full report: `experiments/phase4_baseline/results.md`; rebuild with `evaluate.py`; raw numbers in `metrics.json`. The evaluation's MSE matches what each training run wrote, to 1e-6.
+
+  | Dataset | Our MSE | Paper MSE | Our CI | Paper CI | Always-guess-the-average MSE |
+  |---|---|---|---|---|---|
+  | Davis | 0.716 | 0.463 ± 0.013 | 0.622 | 0.638 ± 0.028 | 0.751 |
+  | KIBA | 0.575 | 0.522 ± 0.010 | 0.565 | 0.638 ± 0.013 | 0.553 |
+  | Metz | 0.762 | 0.658 ± 0.016 | 0.634 | 0.675 ± 0.012 | 0.910 |
+
+  - **Worse than the paper on every metric, and the models barely learn.** Davis beats the always-guess-the-average baseline by only 5%, Metz by 16%, and **KIBA is 4% worse than it**. Predicted values vary far less than the real ones (Davis: prediction sd 0.24 vs true sd 0.87), i.e. the models hedge toward the mean. Pearson 0.24–0.40, rm² 0.04–0.12.
+  - **Validation is much better than test** (Davis 0.414 vs 0.716; same ~0.31 gap on all three). Validation holds compounds and proteins seen in training, the novel-pair test set does not. The models learned the training entities, not transferable chemistry. **Novel pair is the real-world case** (new drug + new protein), so these numbers are what a real user would get.
+  - Likely causes, most likely first: no ensemble (paper averages 3); one fold not 5; hyperparameters (the paper's Bayesian-optimised values are unpublished); **training stopped too early** — validation MSE was still falling at epoch 150 on Davis and Metz (best epochs 143 and 145); KIBA levelled off ~epoch 90 (best 140).
+  - **MC-dropout ± works on Davis only.** Rank agreement between ± and actual error: Davis +0.39 (least-confident quarter is ~2× as wrong as the most-confident), KIBA +0.08, Metz +0.03. On all three the ± is 3–4× too small: the true label lands inside ±2 spread only 33–63% of the time, not ~95%. MC dropout sees only dropout wobble, not the generalisation failure above, so the model can be confidently wrong. **Phase 6 rule: never present this ± as a 95% interval.** Show a relative high/medium/low label, or calibrate on **validation** (never test). The 33–63% coverage was reported, not tuned against.
 - **Phase 5 ideas** (try one at a time, judge on validation only, log in `experiments/results_log.md`):
   - **Protein truncation.** The model sees only the first 499 residues. Truncated: **Davis 267/379, KIBA 148/229, Metz 116/170** sequences. For kinases, the inhibitor binding site is in the kinase domain, which often lies beyond residue 499.
     - First measure how many truncated proteins actually lose part or all of their kinase domain. This needs domain positions from UniProt/Pfam; ask before downloading.
