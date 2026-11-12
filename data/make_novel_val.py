@@ -101,9 +101,9 @@ def main():
               f'(test {test_rows:,})  checks: {"FAILED -> " + "; ".join(problems) if problems else "all pass"}')
         failed |= bool(problems)
 
-    lines += ['', 'Every check passed: no compound and no protein is shared between the new training set and',
-              'the novel validation set, and neither overlaps the test set.' if not failed else
-              '', '**CHECKS FAILED — see the script output.**']
+    lines += ['', '**CHECKS FAILED — see the script output. Do not use these files.**'] if failed else \
+             ['', 'Every check passed: no compound and no protein is shared between the new training set',
+              'and the novel validation set, and neither overlaps the test set.']
     (SPLITS / 'novel_val_summary.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
     (SPLITS / 'novel_val_manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
     print(f'\nWrote {SPLITS / "novel_val_summary.md"} and novel_val_manifest.json')
