@@ -35,3 +35,27 @@ got *worse* (rank correlation +0.021 to -0.050). Optimising MSE alone is steerin
 from what the app needs.
 
 **Keep this metric alongside MSE from now on.**
+
+## How much room is there, and how much of it needs the protein?
+
+Each "perfect" column uses the test labels, so it is a ceiling nothing can reach, not a
+target. Lower is better throughout.
+
+| Dataset | Our best | Guess the average | Perfect compound-only | Perfect compound + protein | Paper |
+|---|---|---|---|---|---|
+| Davis | 0.644 | 0.749 | 0.541 | 0.420 | 0.463 |
+| Metz | 0.719 | 0.849 | 0.332 | 0.326 | 0.658 |
+
+Two things follow.
+
+**On Davis the protein genuinely matters, and the paper is using it.** Knowing the protein
+as well as the compound moves the ceiling from 0.541 to 0.420. The paper scores 0.463,
+which is *better than any compound-only model could ever be* (0.541). Ours is 0.644, worse
+than that ceiling. So the paper really does read the protein and we really do not.
+
+**On Metz almost all the signal is in the compound.** The ceiling barely moves when the
+protein is added (0.332 to 0.326). Yet we score 0.719, miles above 0.332, so our compound
+modelling alone has a lot of room. Metz is the wrong dataset to judge protein work on.
+
+**We are below the compound-only ceiling on both datasets**, so part of the gap needs no
+protein breakthrough at all.

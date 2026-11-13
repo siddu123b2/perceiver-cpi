@@ -52,6 +52,19 @@ def measure(predictions_path, dataset):
             'mse': float(np.mean((test['label'] - test['pred']) ** 2))}
 
 
+def headroom(dataset):
+    """Ceilings. Each 'perfect' figure uses the TEST labels, so it is an upper bound nothing can
+    reach, not a target. They show how much of the signal needs the protein and how much does not."""
+    test = pd.read_csv(ROOT / 'data' / 'splits' / dataset / 'novel_pair' / 'fold0_test.csv')
+    y = test['label'].to_numpy(float)
+    overall = y.mean()
+    per_compound = test.groupby('smiles')['label'].transform('mean').to_numpy()
+    per_protein = test.groupby('sequence')['label'].transform('mean').to_numpy()
+    return {'guess_average': float(np.mean((y - overall) ** 2)),
+            'perfect_compound_only': float(np.mean((y - per_compound) ** 2)),
+            'perfect_additive': float(np.mean((y - (per_compound + per_protein - overall)) ** 2))}
+
+
 def main():
     results = {label: measure(path, dataset) for label, path, dataset in RUNS
                if Path(path).exists()}
@@ -81,7 +94,28 @@ def main():
             'affinities. Phase 5 davis_A improved MSE (0.716 to 0.644) while its protein sensitivity',
             'got *worse* (rank correlation +0.021 to -0.050). Optimising MSE alone is steering us away',
             'from what the app needs.', '',
-            '**Keep this metric alongside MSE from now on.**']
+            '**Keep this metric alongside MSE from now on.**', '',
+            '## How much room is there, and how much of it needs the protein?', '',
+            'Each "perfect" column uses the test labels, so it is a ceiling nothing can reach, not a',
+            'target. Lower is better throughout.', '',
+            '| Dataset | Our best | Guess the average | Perfect compound-only | Perfect compound + protein | Paper |',
+            '|---|---|---|---|---|---|']
+    best_ours = {'davis': 0.644, 'metz': 0.719}
+    paper = {'davis': 0.463, 'metz': 0.658}
+    for dataset in ('davis', 'metz'):
+        h = headroom(dataset)
+        out.append(f'| {dataset.capitalize()} | {best_ours[dataset]:.3f} | {h["guess_average"]:.3f} | '
+                   f'{h["perfect_compound_only"]:.3f} | {h["perfect_additive"]:.3f} | {paper[dataset]:.3f} |')
+    out += ['', 'Two things follow.', '',
+            '**On Davis the protein genuinely matters, and the paper is using it.** Knowing the protein',
+            'as well as the compound moves the ceiling from 0.541 to 0.420. The paper scores 0.463,',
+            'which is *better than any compound-only model could ever be* (0.541). Ours is 0.644, worse',
+            'than that ceiling. So the paper really does read the protein and we really do not.', '',
+            '**On Metz almost all the signal is in the compound.** The ceiling barely moves when the',
+            'protein is added (0.332 to 0.326). Yet we score 0.719, miles above 0.332, so our compound',
+            'modelling alone has a lot of room. Metz is the wrong dataset to judge protein work on.', '',
+            '**We are below the compound-only ceiling on both datasets**, so part of the gap needs no',
+            'protein breakthrough at all.']
     (HERE / 'protein_sensitivity.md').write_text('\n'.join(out) + '\n', encoding='utf-8')
 
     print(f'{"run":16s} {"MSE":>6s} {"spread captured":>16s} {"rank corr":>10s}')
