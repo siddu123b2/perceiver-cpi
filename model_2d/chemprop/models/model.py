@@ -14,6 +14,25 @@ from .CAB import CrossAttentionBlock as CAB
 
 
 
+def load_esm_bank(path: str, sequence_length: int):
+    """Change 5 (CHANGES.md): load the precomputed ESM-2 features.
+
+    Returns one (sequence_length, width) matrix per protein, in the order the bank was built, plus
+    the width. Rows are looked up by the protein index that train.py / predict.py pass in place of
+    the token IDs. Stored as float16 to keep the table small; the model casts per batch.
+    """
+    if not path:
+        raise ValueError('--protein_encoder esm needs --esm_bank <file>; '
+                         'build it with experiments/phase5/make_esm_bank.py')
+    stored = np.load(path, allow_pickle=True)
+    vectors = torch.from_numpy(stored['vectors'])
+    if vectors.shape[1] != sequence_length:
+        raise ValueError(f'{path} holds {vectors.shape[1]} residues per protein but '
+                         f'--sequence_length is {sequence_length}; rebuild the bank to match')
+    index = {str(s): i for i, s in enumerate(stored['sequences'])}
+    return vectors, int(vectors.shape[2]), index
+
+
 class InteractionModel(nn.Module):
     """A :class:`InteractionNet` is a model which contains a D-MPNN and MPL and 1DCNN following by Cross attention Block"""
 
@@ -31,6 +50,18 @@ class InteractionModel(nn.Module):
         self.multiclass = args.dataset_type == 'multiclass'
         self.featurizer = featurizer
 
+        # Change 5 (CHANGES.md): where each residue's meaning comes from. 'learned' is the paper's
+        # original, a blank table trained from scratch on the few hundred proteins in the training
+        # set. 'esm' reads it from ESM-2 instead, pretrained on millions of sequences. Everything
+        # after this point is identical in both modes.
+        self.protein_encoder = getattr(args, 'protein_encoder', 'learned')
+        if self.protein_encoder == 'esm':
+            bank, width, self.esm_index = load_esm_bank(args.esm_bank, args.sequence_length)
+            # frozen: the protein features are fixed, only the projection below learns.
+            # persistent=False keeps the (large) table out of the saved checkpoint; it is rebuilt
+            # from the bank file whenever the model is constructed.
+            self.register_buffer('esm_bank', bank, persistent=False)
+            self.esm_project = nn.Linear(width, args.prot_hidden)
         self.embedding_xt = nn.Embedding(args.vocab_size, args.prot_hidden)
         self.conv_in = nn.Conv1d(in_channels=args.sequence_length, out_channels=args.prot_1d_out, kernel_size=1)
         self.convs = nn.ModuleList([nn.Conv1d(args.prot_hidden, 2*args.prot_hidden, args.kernel_size, padding=args.kernel_size//2) for _ in range(args.prot_1dcnn_num)])   # convolutional layers
@@ -214,8 +245,15 @@ class InteractionModel(nn.Module):
                                        atom_features_batch, bond_features_batch))
 
         #protein feature extraction
-        sequence = sequence_tensor.to(self.embedding_xt.weight.device)  # compat fix 1: was .cuda()
-        embedded_xt = self.embedding_xt(sequence)
+        if self.protein_encoder == 'esm':
+            # sequence_tensor holds one protein index per row (see train.py / predict.py)
+            index = sequence_tensor.to(self.esm_bank.device).view(-1)
+            # the bank is float16 to stay small; cast this batch only
+            features = self.esm_bank[index].to(self.esm_project.weight.dtype)
+            embedded_xt = self.esm_project(features.to(self.esm_project.weight.device))
+        else:
+            sequence = sequence_tensor.to(self.embedding_xt.weight.device)  # compat fix 1: was .cuda()
+            embedded_xt = self.embedding_xt(sequence)
         input_nn = self.conv_in(embedded_xt)
 
         conv_input = input_nn.permute(0, 2, 1)

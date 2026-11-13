@@ -93,6 +93,24 @@ Single-threaded (`OMP_NUM_THREADS=1`, which makes CPU maths exactly repeatable):
 - killed-and-resumed vs straight: **max difference 0.0**, bit-for-bit identical;
 - re-running a finished folder skips training and gives the same predictions (difference 0.0).
 
+### Change 5: `--protein_encoder esm` (2026-11-13, approved)
+
+**Why.** Phase 5 measured that the trained models rank proteins no better than chance within a compound (`experiments/phase5/protein_sensitivity.md`): change the protein and the answer barely moves. The cause is that the paper builds its protein encoder as a blank `nn.Embedding(31, 128)` and learns what amino acids mean from the few hundred proteins in the training set (Davis 243, KIBA 183, Metz 136). ESM-2 was pretrained on millions of sequences instead. A CPU feasibility check first (`experiments/phase5/esm_feasibility.py`) confirmed ESM-2 separates these proteins in a way that tracks affinity (correlation +0.641).
+
+**What changed.** Four files, all behind a flag that is off by default.
+
+1. `chemprop/args.py` — `--protein_encoder {learned,esm}` (default `learned`) and `--esm_bank <file>`, added to both `TrainArgs` and `PredictArgs`.
+2. `chemprop/models/model.py` — new `load_esm_bank()`. In `esm` mode the model registers the precomputed features as a non-persistent buffer and adds one trainable `nn.Linear(480, 128)`; `forward` takes `embedded_xt` from that projection instead of the embedding lookup. **Everything after that line — the CNN blocks, the cross-attention, the head — is untouched.**
+3. `chemprop/train/train.py` and 4. `chemprop/train/predict.py` — in `esm` mode pass one protein index per row instead of 500 token IDs. The original branch is unchanged, only indented.
+
+**Design notes.**
+- Features are **per residue**, not averaged, so the existing CNN can still find the binding region. Averaging over 499 residues would blur the pocket into the rest of the protein.
+- ESM is **frozen**. Features are computed once by `experiments/phase5/make_esm_bank.py`; only the 480→128 projection trains. Recomputing them every epoch would waste nearly all the time, and 243 proteins is far too few to fine-tune a protein model on.
+- The bank is `persistent=False`, so it stays out of the checkpoint (18.1 MB vs 17.8 MB) and is rebuilt from the file whenever the model is constructed.
+- The same 499-residue truncation and zero padding as the original, so only the encoder differs.
+
+**Effect on results with the default settings: none.** Tested 2026-11-13 on a 400-row Davis sample, 2 epochs, single-threaded: this code with default arguments against the original code from git gave **identical test predictions (max difference 0.0)**. In `esm` mode training runs and predicts normally; the predictions differ, which is the point.
+
 ### Not a change: `mc_dropout.py` (our own file)
 
 `model_2d/mc_dropout.py` adds MC-dropout predictions: the normal score, plus a ± from 30 predictions made with dropout on. It only *uses* the official code (`load_checkpoint`, `predict`) and changes none of it.

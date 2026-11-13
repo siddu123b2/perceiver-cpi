@@ -34,17 +34,22 @@ def predict(model: InteractionModel,
             batch.batch_graph(), batch.features(),batch.sequences(), batch.atom_descriptors(), batch.atom_features(), batch.bond_features(), batch.add_features()
 
         dummy_array = [0]*args.sequence_length
-        sequence_2_ar = [list(tokenizer.encode(list(t[0]))) + dummy_array for t in protein_sequence_batch]
+        # Change 5 (CHANGES.md): in ESM mode the model looks its protein up in a precomputed table,
+        # so pass one index per row instead of 500 token IDs. The 'learned' path below is unchanged.
+        if getattr(args, 'protein_encoder', 'learned') == 'esm':
+            sequence_tensor = torch.LongTensor([model.esm_index[t[0]] for t in protein_sequence_batch])
+        else:
+            sequence_2_ar = [list(tokenizer.encode(list(t[0]))) + dummy_array for t in protein_sequence_batch]
         
-        new_ar = []
+            new_ar = []
 
-        for arr in sequence_2_ar:
-            while len(arr)>args.sequence_length:
-                arr.pop(len(arr)-1)
-            new_ar.append(np.zeros(args.sequence_length)+np.array(arr))
+            for arr in sequence_2_ar:
+                while len(arr)>args.sequence_length:
+                    arr.pop(len(arr)-1)
+                new_ar.append(np.zeros(args.sequence_length)+np.array(arr))
         
-        # convert list_sequence to tensor
-        sequence_tensor = torch.LongTensor(new_ar)
+            # convert list_sequence to tensor
+            sequence_tensor = torch.LongTensor(new_ar)
         add_feature = torch.Tensor(add_feature)
 
         # Make predictions

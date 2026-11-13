@@ -38,3 +38,4 @@ experiments/phase5/kaggle_upload/
 experiments/phase5/runs/
 experiments/phase5/kaggle_output/
 experiments/phase5/esm_cache/
+experiments/phase5/esm_bank_*.npz

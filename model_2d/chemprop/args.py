@@ -427,6 +427,18 @@ class TrainArgs(CommonArgs):
 
     kernel_size: int = 7
 
+    protein_encoder: Literal['learned', 'esm'] = 'learned'
+    """
+    Change 5 in model_2d/CHANGES.md. 'learned' is the paper's original: a blank embedding that must
+    learn what amino acids mean from the few hundred proteins in the training set. 'esm' instead
+    reads each residue's meaning from ESM-2, a protein language model pretrained on millions of
+    sequences, and needs --esm_bank. Everything after the encoder is identical either way.
+    """
+
+    esm_bank: str = None
+    """Path to the .npz of precomputed ESM-2 features (experiments/phase5/make_esm_bank.py).
+    Required when --protein_encoder esm."""
+
     def __init__(self, *args, **kwargs) -> None:
         super(TrainArgs, self).__init__(*args, **kwargs)
         self._task_names = None
@@ -665,6 +677,18 @@ class PredictArgs(CommonArgs):
     prot_1dcnn_num: int = 3
 
     kernel_size: int = 7
+
+    protein_encoder: Literal['learned', 'esm'] = 'learned'
+    """
+    Change 5 in model_2d/CHANGES.md. 'learned' is the paper's original: a blank embedding that must
+    learn what amino acids mean from the few hundred proteins in the training set. 'esm' instead
+    reads each residue's meaning from ESM-2, a protein language model pretrained on millions of
+    sequences, and needs --esm_bank. Everything after the encoder is identical either way.
+    """
+
+    esm_bank: str = None
+    """Path to the .npz of precomputed ESM-2 features (experiments/phase5/make_esm_bank.py).
+    Required when --protein_encoder esm."""
     @property
     def ensemble_size(self) -> int:
         """The number of models in the ensemble."""
