@@ -36,3 +36,4 @@ experiments/**/*.zip
 experiments/phase4_baseline/colab_upload/
 experiments/phase5/kaggle_upload/
 experiments/phase5/runs/
+experiments/phase5/kaggle_output/
