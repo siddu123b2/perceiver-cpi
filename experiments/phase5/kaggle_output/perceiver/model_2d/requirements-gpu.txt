@@ -1,0 +1,9 @@
+# GPU version of the environment: for training on a laptop with an NVIDIA GPU (Phase 4).
+# Same packages as requirements.txt, plus the CUDA build of PyTorch 2.15.0 (built for CUDA 13.2).
+# Needs Python 3.12 on Windows and a recent NVIDIA driver (nvidia-smi must show "CUDA Version: 13.0" or higher).
+# Do not install the CUDA Toolkit: this PyTorch download already contains the CUDA parts it needs.
+#
+# Install (about 3 GB download):  python -m pip install -r model_2d/requirements-gpu.txt
+--extra-index-url https://download.pytorch.org/whl/cu132
+torch==2.15.0+cu132
+-r requirements.txt

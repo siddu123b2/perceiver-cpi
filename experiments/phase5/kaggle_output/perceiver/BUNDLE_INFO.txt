@@ -1,0 +1,2 @@
+Perceiver CPI, Phase 5 experiments
+Built 2026-11-12 20:48 from git commit 1332321 (with uncommitted changes)

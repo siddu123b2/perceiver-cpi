@@ -1,0 +1,19 @@
+# Python 3.12. Exact versions tested in Phase 1 (2026-10-29).
+#
+# PyTorch is installed separately, because the right build depends on the machine:
+#   Local (CPU only):  pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu
+#   Google Colab:      keep Colab's pre-installed GPU build (don't reinstall torch)
+#
+# Then:  pip install -r model_2d/requirements.txt
+rdkit==2026.9.1
+numpy==2.5.4
+pandas==2.3.3
+scipy==1.18.1
+scikit-learn==1.9.1
+tqdm==4.70.1
+typed-argument-parser==1.12.0
+typing_extensions==4.16.0
+tensorboardX==2.6.5
+lifelines==0.30.3
+hyperopt==0.3.0
+tape-proteins==0.5

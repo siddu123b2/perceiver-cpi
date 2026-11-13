@@ -218,6 +218,29 @@ Phase details from the spec:
   - **The models mostly ignore the protein.** Share of prediction variance explained by compound identity vs protein identity: Davis 69%/13%, KIBA 85%/9%, Metz 87%/9%. In the true labels it is 28%/16%, 50%/18%, 61%/11%. So the models answer by *which drug* it is and barely change for *which protein* they are asked about. For the app this is the core problem: the user picks both.
   - **Truncation is NOT the cause — tested and rejected.** If losing residues past 499 were crippling the protein branch, long proteins would be clearly worse. Davis is 0.79x (i.e. *better*) on cut-off proteins, KIBA 1.10x, Metz 1.04x. Caveat: this compares different proteins, so family and label range vary too; suggestive, not controlled. **The kinase-domain idea therefore drops down the list; do not lead Phase 5 with it.** (Claude had wrongly called it the best route to beating the paper before running this check.)
   - **Honest expectation.** Ensembling typically buys 5-15% MSE, and the paper's fold-to-fold std is small (±0.013), so neither explains the full Davis gap (0.716 vs 0.463). Part of it is likely the paper's Bayesian-optimised hyperparameters, which are unpublished. Closing the gap completely may not be possible without them; say so rather than implying otherwise.
+- **Phase 5 Step 1 results (2026-11-13), run on the user's own Kaggle account (T4 x2, ~4 h).** `experiments/phase5/results.md`; raw runs in `experiments/phase5/runs/`.
+
+  | Dataset | Phase 4 | A (novel-pair validation) | B (random-pair control) | Paper |
+  |---|---|---|---|---|
+  | Davis | 0.716 | **0.644** | 0.697 | 0.463 |
+  | Metz | 0.762 | 0.759 | **0.719** | 0.658 |
+
+  - **The yardstick question is NOT settled: 1-1 and probably confounded.** In both datasets the run that trained *longer* won (davis_A stopped at epoch 102 vs B's 83; metz_B at 146 vs A's 81). Stopping epoch, not the yardstick, is the simplest explanation, and it matches the Phase 4 finding that 150 epochs was too few. Do not claim the novel-pair validation is better on this evidence.
+  - The distribution check argues against the obvious story too: on Davis, `randomval` is the *closer* match to the test labels (KS 0.040 vs 0.152) yet A won; on Metz `novelval` is closer (0.037 vs 0.132) yet B won. So representativeness does not explain it either.
+  - **The decisive finding — `experiments/phase5/protein_sensitivity.py` → `protein_sensitivity.md`.** Hold the compound fixed and vary the protein (test compounds with >=5 proteins):
+
+    | Run | Test MSE | Spread captured | Rank correlation within a compound |
+    |---|---|---|---|
+    | Phase 4 Davis | 0.716 | 16% | +0.021 |
+    | davis_A | 0.644 | 17% | -0.050 |
+    | davis_B | 0.697 | 20% | -0.066 |
+    | Phase 4 Metz | 0.762 | 37% | +0.109 |
+    | metz_A | 0.759 | 26% | -0.005 |
+    | metz_B | 0.719 | 19% | -0.070 |
+
+    **Within one compound, our ranking of proteins is no better than shuffling them** (correlations are zero or negative), and the answers move only 16-37% as far as they should when the protein changes. The models are close to "one number per compound". **This is the project's central problem**: the app asks the user for a compound *and* a protein.
+  - **Optimising MSE is steering us the wrong way.** davis_A improved MSE (0.716 -> 0.644) while its protein sensitivity got *worse* (+0.021 -> -0.050). Overall MSE and CI hide this, because a per-compound average scores respectably on both. **Report protein sensitivity next to MSE from every experiment from now on.**
+  - Tooling: the `kaggle` CLI is installed in `.venv` (`kaggle kernels output <user>/<notebook> -p <dir>`); it needs a token from kaggle.com/settings/api, which the user supplies and should expire afterwards.
 - **Phase 5 ideas** (try one at a time, judge on validation only, log in `experiments/results_log.md`):
   - **Priority 1 (from Step 0): a novel-pair validation set.** Carve a second validation set out of the training rows that holds out whole compounds *and* whole proteins, mirroring how the test set is built, and use it to pick the epoch. Keep the paper-style validation as well, so the comparison with the paper stays honest. Cheap to build (reuses `make_splits.py`), and it changes what every later experiment optimises, so do it first.
   - **Note on "train longer":** validation MSE was still falling at epoch 150 on Davis and Metz, but that validation measures memorisation. Re-judge this idea on the novel-pair validation before spending GPU time; more epochs may simply memorise harder.
