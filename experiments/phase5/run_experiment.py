@@ -35,7 +35,6 @@ ROOT = HERE if (HERE / 'model_2d').exists() else HERE.parent.parent
 MODEL_DIR = ROOT / 'model_2d'
 SPLITS = ROOT / 'data' / 'splits'
 RUNS = Path(os.environ.get('PERCEIVER_RUNS', HERE / 'runs'))
-EPOCHS = 150
 
 # Label weighting, unchanged from Phase 4 (CLAUDE.md decisions D1/D2)
 WEIGHTING = {
@@ -45,15 +44,37 @@ WEIGHTING = {
 }
 
 EXPERIMENTS = {
-    'davis_A': {'dataset': 'davis', 'train': 'train2', 'val': 'novelval',
+    # Step 1 (done 2026-11-13): does the validation yardstick matter? Result in results.md -
+    # inconclusive, 1-1, and probably explained by stopping epoch rather than the yardstick.
+    'davis_A': {'dataset': 'davis', 'train': 'train2', 'val': 'novelval', 'encoder': 'learned',
+                'seed': 0, 'epochs': 150, 'group': 'step1',
                 'why': 'new yardstick: validation is unseen compounds and proteins'},
-    'davis_B': {'dataset': 'davis', 'train': 'train3', 'val': 'randomval',
+    'davis_B': {'dataset': 'davis', 'train': 'train3', 'val': 'randomval', 'encoder': 'learned',
+                'seed': 0, 'epochs': 150, 'group': 'step1',
                 'why': 'control: validation is random pairs, all entities seen'},
-    'metz_A': {'dataset': 'metz', 'train': 'train2', 'val': 'novelval',
-               'why': 'new yardstick: validation is unseen compounds and proteins'},
-    'metz_B': {'dataset': 'metz', 'train': 'train3', 'val': 'randomval',
-               'why': 'control: validation is random pairs, all entities seen'},
+    'metz_A': {'dataset': 'metz', 'train': 'train2', 'val': 'novelval', 'encoder': 'learned',
+               'seed': 0, 'epochs': 150, 'group': 'step1', 'why': 'as davis_A, on Metz'},
+    'metz_B': {'dataset': 'metz', 'train': 'train3', 'val': 'randomval', 'encoder': 'learned',
+               'seed': 0, 'epochs': 150, 'group': 'step1', 'why': 'as davis_B, on Metz'},
+
+    # Step B: does a pretrained protein encoder make the model read the protein at all?
+    # Two seeds each, because Step 1 showed a single run cannot be told apart from luck.
+    # 400 epochs: our best epochs so far were 83-143, so this is ~3x past the peak.
+    'davis_base_s0': {'dataset': 'davis', 'train': 'train2', 'val': 'novelval', 'encoder': 'learned',
+                      'seed': 0, 'epochs': 400, 'group': 'baseline',
+                      'why': "the paper's encoder, learned from 243 proteins"},
+    'davis_base_s1': {'dataset': 'davis', 'train': 'train2', 'val': 'novelval', 'encoder': 'learned',
+                      'seed': 1, 'epochs': 400, 'group': 'baseline',
+                      'why': "the paper's encoder, second seed"},
+    'davis_esm_s0': {'dataset': 'davis', 'train': 'train2', 'val': 'novelval', 'encoder': 'esm',
+                     'seed': 0, 'epochs': 400, 'group': 'esm',
+                     'why': 'ESM-2 encoder, pretrained on millions of sequences'},
+    'davis_esm_s1': {'dataset': 'davis', 'train': 'train2', 'val': 'novelval', 'encoder': 'esm',
+                     'seed': 1, 'epochs': 400, 'group': 'esm',
+                     'why': 'ESM-2 encoder, second seed'},
 }
+ESM_BANK = HERE / 'esm_bank_davis.npz'   # built by make_esm_bank.py
+
 # KIBA is left out on purpose: it is ~4x the cost of the other two. Run the winner on it afterwards.
 
 
@@ -69,9 +90,13 @@ def data_workers():
     return max(0, min(4, (os.cpu_count() or 1) - 1))
 
 
-def command(name, epochs):
+def command(name, epochs=None):
     spec = EXPERIMENTS[name]
     dataset = spec['dataset']
+    epochs = epochs or spec['epochs']
+    seed = str(spec['seed'])
+    extra = ([] if spec['encoder'] == 'learned' else
+             ['--protein_encoder', 'esm', '--esm_bank', str(ESM_BANK)])
     return [sys.executable, str(HERE / 'train_quiet.py'),
             '--data_path', str(split_file(dataset, spec['train'])),
             '--separate_val_path', str(split_file(dataset, spec['val'])),
@@ -79,8 +104,8 @@ def command(name, epochs):
             '--dataset_type', 'regression', '--target_columns', 'label', '--metric', 'mse',
             '--epochs', str(epochs), '--ensemble_size', '1', '--num_folds', '1',
             '--batch_size', '50', '--dropout', '0.1', '--aggregation', 'mean',
-            '--seed', '0', '--pytorch_seed', '0', '--num_workers', str(data_workers()),
-            '--save_dir', str(RUNS / name), '--save_preds', '--resume'] + WEIGHTING[dataset]
+            '--seed', seed, '--pytorch_seed', seed, '--num_workers', str(data_workers()),
+            '--save_dir', str(RUNS / name), '--save_preds', '--resume'] + WEIGHTING[dataset] + extra
 
 
 def finished(name):
@@ -94,11 +119,18 @@ def option(flag, default):
 def main():
     if '--list' in sys.argv:
         for name, spec in EXPERIMENTS.items():
-            print(f'  {name:9s} train={spec["train"]:7s} val={spec["val"]:10s}  {spec["why"]}')
+            print(f'  {name:14s} group={spec["group"]:8s} encoder={spec["encoder"]:7s} '
+                  f'seed={spec["seed"]} epochs={spec["epochs"]:3d}  {spec["why"]}')
         return
 
-    epochs = option('--epochs', EPOCHS)
+    epochs = option('--epochs', 0) or None   # None = each experiment's own setting
     named = [a for a in sys.argv[1:] if a in EXPERIMENTS]
+    group = sys.argv[sys.argv.index('--group') + 1] if '--group' in sys.argv else None
+    if group:
+        named = [n for n, s in EXPERIMENTS.items() if s['group'] == group]
+        if not named:
+            sys.exit(f'no experiments in group {group!r}; groups are '
+                     + ', '.join(sorted({s["group"] for s in EXPERIMENTS.values()})))
     todo = [n for n in (named or EXPERIMENTS) if not finished(n)]
 
     for name in (named or EXPERIMENTS):

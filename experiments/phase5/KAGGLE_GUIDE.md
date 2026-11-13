@@ -92,3 +92,52 @@ Nothing is lost. Kaggle saves everything in `/kaggle/working` as the version's o
   know which approach wins, we run it on KIBA.
 - The test set is never used for training or for choosing settings. See the note at the top of
   `run_experiment.py`.
+
+---
+
+# Step B: does a pretrained protein encoder help?
+
+The notebook for this is **`Perceiver_CPI_stepB.ipynb`**, in the same `kaggle_upload` folder.
+
+This one runs in **two sessions**, about 5–6 hours each. Together they answer whether swapping the
+protein encoder makes the model actually read the protein.
+
+## Once, before you start
+
+Re-upload the dataset, because it now contains two extra scripts:
+
+1. Run `make_kaggle_dataset.py` on your laptop (or ask Claude to).
+2. On Kaggle, open your **perceiver cpi data** dataset → **New Version** → drop in the new
+   `perceiver_cpi_data.zip` → **Create**.
+
+## Session 1 — the baseline
+
+1. **New Notebook** → **File → Import Notebook** → `Perceiver_CPI_stepB.ipynb`
+2. **Add Input** → your `perceiver cpi data` dataset
+3. **Accelerator** → **GPU T4 x2**, **Persistence** → **Files only**
+4. In cell 1, leave `GROUP = 'baseline'`
+5. **Save Version → Save & Run All (Commit)**, then close the browser
+
+## Session 2 — the ESM version
+
+1. Open the same notebook again
+2. Change cell 1 to `GROUP = 'esm'`
+3. **Add Input** → **Your Work** → **Notebooks** → attach **this notebook's own output** from
+   session 1. That is what lets it skip the runs already done.
+4. **Save Version → Save & Run All (Commit)** again
+
+## When both are done
+
+Send Claude the output (the `kaggle kernels output ...` command at the bottom of the Output tab is
+the easiest way).
+
+**The number to look at is protein ranking.** Our models have been at 0.00, meaning that when you
+keep the drug and change the protein, the model's ordering is no better than guessing. The best
+achievable is about +0.41. Anything clearly above zero is real progress.
+
+## Notes
+
+- Only Davis is used here. Metz and KIBA come after we know whether this works.
+- The ESM session spends its first few minutes working out each protein's features. That is normal,
+  and it only happens once per session.
+- If a session runs out of time, nothing is lost: attach its output and run again.
