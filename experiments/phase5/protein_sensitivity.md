@@ -8,14 +8,15 @@ Over test compounds appearing with at least 5 proteins.
 
 | Run | Test MSE | True spread | Our spread | Spread captured | Rank correlation within a compound |
 |---|---|---|---|---|---|
-| Phase 4 Davis | 0.716 | 0.70 | 0.11 | 16% | **+0.021** |
-| Phase 5 davis_A | 0.644 | 0.70 | 0.12 | 17% | **-0.050** |
-| Phase 5 davis_B | 0.697 | 0.70 | 0.14 | 20% | **-0.066** |
-| Phase 4 Metz | 0.762 | 0.59 | 0.22 | 37% | **+0.109** |
-| Phase 5 metz_A | 0.759 | 0.59 | 0.15 | 26% | **-0.005** |
-| Phase 5 metz_B | 0.719 | 0.59 | 0.11 | 19% | **-0.070** |
+| Phase 4 davis | 0.716 | 0.70 | 0.11 | 16% | **+0.021** |
+| Phase 4 metz | 0.762 | 0.59 | 0.22 | 37% | **+0.109** |
+| Phase 4 kiba | 0.575 | 0.45 | 0.15 | 33% | **-0.067** |
+| davis_A | 0.644 | 0.70 | 0.12 | 17% | **-0.050** |
+| davis_B | 0.697 | 0.70 | 0.14 | 20% | **-0.066** |
+| metz_A | 0.759 | 0.59 | 0.15 | 26% | **-0.005** |
+| metz_B | 0.719 | 0.59 | 0.11 | 19% | **-0.070** |
 
-## What this says
+## What this said at Step 1 (2026-11-13)
 
 **The rank correlations are indistinguishable from zero, and some are negative.** Within a
 single compound, the order in which our models rank proteins is no better than shuffling

@@ -16,24 +16,36 @@ least MIN_PROTEINS proteins, and ask two things:
 
 Writes protein_sensitivity.md next to this file.
 """
+import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent.parent
+# Works both in the repo and inside the flat Kaggle/Colab bundle, where data/ sits next to this file.
+ROOT = HERE if (HERE / 'data' / 'splits').exists() else HERE.parent.parent
+RUNS_DIR = Path(os.environ.get('PERCEIVER_RUNS', HERE / 'runs'))
+DATASETS = ('davis', 'metz', 'kiba')
 MIN_PROTEINS = 5
 
-# (label, predictions file, dataset)
-RUNS = [
-    ('Phase 4 Davis', ROOT / 'experiments/phase4_baseline/runs/davis/test_preds.csv', 'davis'),
-    ('Phase 5 davis_A', HERE / 'runs/davis_A/test_preds.csv', 'davis'),
-    ('Phase 5 davis_B', HERE / 'runs/davis_B/test_preds.csv', 'davis'),
-    ('Phase 4 Metz', ROOT / 'experiments/phase4_baseline/runs/metz/test_preds.csv', 'metz'),
-    ('Phase 5 metz_A', HERE / 'runs/metz_A/test_preds.csv', 'metz'),
-    ('Phase 5 metz_B', HERE / 'runs/metz_B/test_preds.csv', 'metz'),
-]
+
+def find_runs():
+    """Every finished run we can see, as (label, predictions file, dataset).
+
+    Discovered rather than listed, so a new experiment appears here without editing this file, and
+    so it works inside the Kaggle bundle, where only some of the runs are present.
+    """
+    found = []
+    for dataset in DATASETS:
+        path = ROOT / 'experiments' / 'phase4_baseline' / 'runs' / dataset / 'test_preds.csv'
+        if path.exists():
+            found.append((f'Phase 4 {dataset}', path, dataset))
+    for folder in sorted(RUNS_DIR.glob('*')) if RUNS_DIR.exists() else []:
+        dataset = next((d for d in DATASETS if folder.name.startswith(d)), None)
+        if dataset and (folder / 'test_preds.csv').exists():
+            found.append((folder.name, folder / 'test_preds.csv', dataset))
+    return found
 
 
 def measure(predictions_path, dataset):
@@ -66,8 +78,10 @@ def headroom(dataset):
 
 
 def main():
-    results = {label: measure(path, dataset) for label, path, dataset in RUNS
-               if Path(path).exists()}
+    runs = find_runs()
+    if not runs:
+        raise SystemExit(f'no finished runs with test_preds.csv under {RUNS_DIR}')
+    results = {label: measure(path, dataset) for label, path, dataset in runs}
 
     out = ['# Can the model tell proteins apart?', '',
            'Overall MSE and CI can look reasonable while a model is really predicting one number per',
@@ -80,7 +94,7 @@ def main():
         out.append(f'| {label} | {r["mse"]:.3f} | {r["true_spread"]:.2f} | {r["our_spread"]:.2f} | '
                    f'{r["captured"]:.0%} | **{r["rank_corr"]:+.3f}** |')
 
-    out += ['', '## What this says', '',
+    out += ['', '## What this said at Step 1 (2026-11-13)', '',
             '**The rank correlations are indistinguishable from zero, and some are negative.** Within a',
             'single compound, the order in which our models rank proteins is no better than shuffling',
             'them. The models move only 16-37% as far as they should when the protein changes.', '',
@@ -103,6 +117,8 @@ def main():
     best_ours = {'davis': 0.644, 'metz': 0.719}
     paper = {'davis': 0.463, 'metz': 0.658}
     for dataset in ('davis', 'metz'):
+        if not (ROOT / 'data' / 'splits' / dataset / 'novel_pair' / 'fold0_test.csv').exists():
+            continue
         h = headroom(dataset)
         out.append(f'| {dataset.capitalize()} | {best_ours[dataset]:.3f} | {h["guess_average"]:.3f} | '
                    f'{h["perfect_compound_only"]:.3f} | {h["perfect_additive"]:.3f} | {paper[dataset]:.3f} |')

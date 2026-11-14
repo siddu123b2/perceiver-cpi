@@ -21,7 +21,8 @@ import numpy as np
 import torch
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent.parent
+# Works both in the repo and inside the flat Kaggle/Colab bundle, where data/ sits next to this file.
+ROOT = HERE if (HERE / 'data' / 'splits').exists() else HERE.parent.parent
 PARTS = ['train2', 'novelval', 'train3', 'randomval', 'test', 'train', 'val']
 
 

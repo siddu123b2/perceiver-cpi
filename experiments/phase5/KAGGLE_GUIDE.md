@@ -141,3 +141,19 @@ achievable is about +0.41. Anything clearly above zero is real progress.
 - The ESM session spends its first few minutes working out each protein's features. That is normal,
   and it only happens once per session.
 - If a session runs out of time, nothing is lost: attach its output and run again.
+
+## If session 2 stopped in cell 3 (`Building the ESM features failed`)
+
+Two bugs in our own code, both found and fixed on 2026-11-14 from the failed run's log. Nothing you
+did was wrong, and no GPU time was lost — it stopped after 54 seconds.
+
+1. `make_esm_bank.py` looked for the data in the repo's folder layout, not the flat one inside the
+   Kaggle bundle, so it reported `no fold-0 split files under /kaggle/data/splits/...`.
+2. Cell 1 searched only one folder deep for a previous session's results, but Kaggle mounts inputs
+   three deep. So **Add Input → Your Work → Notebooks** had no effect and nothing was carried over.
+
+`protein_sensitivity.py` had the same path bug as (1) and would have failed in cell 6 as well.
+
+**To pick up the fixes:** re-run `make_kaggle_dataset.py`, upload a **New Version** of the
+`perceiver cpi data` dataset, re-import `Perceiver_CPI_stepB.ipynb`, then run session 2 again.
+Cell 1 now prints `Carried over N earlier run(s).` so you can see at a glance whether it worked.
