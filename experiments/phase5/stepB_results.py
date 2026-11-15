@@ -28,7 +28,8 @@ sys.path.insert(0, str(HERE))
 from protein_sensitivity import measure   # noqa: E402
 
 GROUPS = {'paper encoder (learned)': ['davis_base_s0', 'davis_base_s1'],
-          'ESM-2 encoder': ['davis_esm_s0', 'davis_esm_s1']}
+          'ESM-2 encoder': ['davis_esm_s0', 'davis_esm_s1'],
+          'both (learned + gated ESM-2)': ['davis_both_s0', 'davis_both_s1']}
 
 
 def best_validation(name):
@@ -91,9 +92,9 @@ def main():
 
     val_ceiling, test_ceiling = ceiling('novelval'), ceiling('test')
     lines = [
-        '# Step B: does a pretrained protein encoder help?', '',
-        'Four Davis runs, 400 epochs each, same split (`train2` train / `novelval` validation),',
-        'two seeds per group. The only difference between the groups is the protein encoder.', '',
+        '# Steps B and C: does a pretrained protein encoder help?', '',
+        'Davis runs, 400 epochs each, same split (`train2` train / `novelval` validation), two',
+        'seeds per group. The only difference between the groups is the protein encoder.', '',
         '**Judged on validation.** `novelval` holds compounds and proteins that training never saw,',
         'built the same way as the test set. The test numbers below are reported, not used to',
         'choose. "Protein rank correlation" holds the compound fixed, varies the protein, and asks',
@@ -132,6 +133,36 @@ def main():
               '5-fold with an ensemble of 3.', '']
 
     base, esm = GROUPS['paper encoder (learned)'], GROUPS['ESM-2 encoder']
+    both = GROUPS.get('both (learned + gated ESM-2)', [])
+    if any(n in results for n in both):
+        lines += [
+            '## Step C session A: the two encoders combined (2026-11-15)', '',
+            'The `both` runs keep the paper\'s encoder and add ESM-2 through a gate initialised to',
+            'zero, so training starts as an exact copy of the paper\'s model and can turn ESM up if',
+            'it helps.', '',
+            '**It did not. The model switched ESM off and kept it off.** The learned gate finished at',
+            '+0.0013 and -0.0002 for the two seeds, against a starting value of 0. Forcing the gate',
+            'to exactly zero - deleting the ESM branch outright - moves test MSE from **0.6468 to',
+            '0.6466**, and changes each prediction by 0.0008 on average. So the ESM half of this',
+            'model contributes nothing, and `both` is the baseline wearing a different name.', '',
+            '**Read its scores that way.** Test MSE '
+            f'{mean(results, both, "test_mse"):.3f} against the baseline\'s '
+            f'{mean(results, base, "test_mse"):.3f} is the same number within seed noise, as it must',
+            'be. Its validation protein rank, '
+            f'{mean(results, both, "val_rank"):+.3f}, is identical to the baseline\'s '
+            f'{mean(results, base, "val_rank"):+.3f}. The test protein rank looks better '
+            f'({mean(results, both, "test_rank"):+.3f} vs {mean(results, base, "test_rank"):+.3f}),',
+            'but the ablation above rules out ESM as the cause, so that is seed noise - and the two',
+            '`both` seeds disagree violently on validation (+0.123 and -0.037), which is the clearest',
+            'available evidence that this metric is very noisy at these sample sizes.', '',
+            '**Why the optimiser discarded ESM.** Turning the gate up raises the training loss,',
+            'because ESM-2 on its own is the less accurate encoder (test MSE 0.734 vs 0.643). The',
+            'gate was designed so the change could never make things worse, and it worked exactly as',
+            'designed - it also gave gradient descent an easy way to throw the new information away.',
+            'Combining the two encoders needs something that forces the model to use the protein,',
+            'not merely permits it.', '',
+            '**The protein problem is therefore still open.** ESM-2 alone remains the only thing that',
+            'has moved it, and it costs accuracy to do so.', '']
     lines += [
         '## Reading (2026-11-15)', '',
         '**ESM moves protein ranking off zero, and this is the first thing in Phase 5 that has.**',

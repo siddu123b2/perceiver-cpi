@@ -15,6 +15,7 @@ Two details the ESM runs need:
     the checkpoint - it has to be passed on the command line.
 """
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -25,7 +26,7 @@ import torch
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE if (HERE / 'data' / 'splits').exists() else HERE.parent.parent
-RUNS = HERE / 'runs'
+RUNS = Path(os.environ.get('PERCEIVER_RUNS', HERE / 'runs'))   # Kaggle/Colab put runs elsewhere
 BANK = HERE / 'esm_bank_davis.npz'
 
 sys.path.insert(0, str(HERE))
@@ -51,14 +52,14 @@ def run(name: str, spec: dict, folder: Path) -> bool:
 
     with tempfile.TemporaryDirectory() as tmp:
         extra = []
-        if spec['encoder'] == 'esm':
+        if spec['encoder'] in ('esm', 'both'):
             if not BANK.exists():
                 # e.g. a Kaggle session that trains Metz and only carried the Davis runs across
                 print(f'{name}: skipped, needs the ESM bank at {BANK} '
                       f'(build it with make_esm_bank.py davis)')
                 return False
             checkpoint = patched_checkpoint(checkpoint, Path(tmp))
-            extra = ['--protein_encoder', 'esm', '--esm_bank', str(BANK)]
+            extra = ['--protein_encoder', spec['encoder'], '--esm_bank', str(BANK)]
         command = [sys.executable, str(ROOT / 'model_2d' / 'predict.py'),
                    '--test_path', str(val_path), '--preds_path', str(out),
                    '--checkpoint_path', str(checkpoint),

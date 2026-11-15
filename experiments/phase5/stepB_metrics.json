@@ -50,5 +50,31 @@
     "val_mse_check": 0.4657651771854072,
     "test_captured": 0.286555994594486,
     "test_rank": 0.03901728921254049
+  },
+  "davis_both_s0": {
+    "group": "both (learned + gated ESM-2)",
+    "val_mse": 0.510753,
+    "best_epoch": 76,
+    "test_mse": 0.646823237129333,
+    "test_ci": 0.6292701613767386,
+    "val_captured": 0.16257227250629988,
+    "val_rank": 0.12320504463183271,
+    "val_compounds": 10,
+    "val_mse_check": 0.5107531355016348,
+    "test_captured": 0.20078714565484942,
+    "test_rank": 0.05179949921106949
+  },
+  "davis_both_s1": {
+    "group": "both (learned + gated ESM-2)",
+    "val_mse": 0.515826,
+    "best_epoch": 98,
+    "test_mse": 0.6299185988466639,
+    "test_ci": 0.6487229699320631,
+    "val_captured": 0.10641883847800508,
+    "val_rank": -0.03671503121832769,
+    "val_compounds": 10,
+    "val_mse_check": 0.5158264101597565,
+    "test_captured": 0.12855126818042112,
+    "test_rank": 0.08312994242891424
   }
 }
