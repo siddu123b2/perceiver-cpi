@@ -48,9 +48,15 @@ def find_runs():
     return found
 
 
-def measure(predictions_path, dataset):
-    test = pd.read_csv(ROOT / 'data' / 'splits' / dataset / 'novel_pair' / 'fold0_test.csv')
-    test['pred'] = pd.read_csv(predictions_path)['label'].to_numpy(float)
+def measure(predictions_path, dataset, part='test'):
+    """Protein sensitivity on one split. part='novelval' judges an experiment without opening the
+    test set, which is what Phase 5 chooses on."""
+    test = pd.read_csv(ROOT / 'data' / 'splits' / dataset / 'novel_pair' / f'fold0_{part}.csv')
+    predicted = pd.read_csv(predictions_path)
+    if len(predicted) != len(test):
+        raise SystemExit(f'{predictions_path}: {len(predicted)} predictions for {len(test)} '
+                         f'rows of fold0_{part}.csv')
+    test['pred'] = predicted['label'].to_numpy(float)
     enough = test.groupby('smiles').filter(lambda g: len(g) >= MIN_PROTEINS)
     by_compound = enough.groupby('smiles')
     true_spread = by_compound['label'].std().mean()

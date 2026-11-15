@@ -1,0 +1,54 @@
+{
+  "davis_base_s0": {
+    "group": "paper encoder (learned)",
+    "val_mse": 0.511153,
+    "best_epoch": 80,
+    "test_mse": 0.6459733000621802,
+    "test_ci": 0.6059396498146203,
+    "val_captured": 0.19666906371612772,
+    "val_rank": 0.020817501547136158,
+    "val_compounds": 10,
+    "val_mse_check": 0.5111530293261696,
+    "test_captured": 0.2152639988034447,
+    "test_rank": -0.03603344813594025
+  },
+  "davis_base_s1": {
+    "group": "paper encoder (learned)",
+    "val_mse": 0.510924,
+    "best_epoch": 133,
+    "test_mse": 0.6399692319397756,
+    "test_ci": 0.6319356636162963,
+    "val_captured": 0.12354083459378096,
+    "val_rank": 0.0650256772386753,
+    "val_compounds": 10,
+    "val_mse_check": 0.5109239647028152,
+    "test_captured": 0.1842672716319456,
+    "test_rank": 0.03512016330505151
+  },
+  "davis_esm_s0": {
+    "group": "ESM-2 encoder",
+    "val_mse": 0.504728,
+    "best_epoch": 139,
+    "test_mse": 0.7532160276810342,
+    "test_ci": 0.5977074001843081,
+    "val_captured": 0.29290021356933194,
+    "val_rank": 0.07362744963442507,
+    "val_compounds": 10,
+    "val_mse_check": 0.5047280287891415,
+    "test_captured": 0.3260103883449056,
+    "test_rank": 0.055441161409382454
+  },
+  "davis_esm_s1": {
+    "group": "ESM-2 encoder",
+    "val_mse": 0.465765,
+    "best_epoch": 109,
+    "test_mse": 0.7153799063071612,
+    "test_ci": 0.6032754870234243,
+    "val_captured": 0.30556119233691664,
+    "val_rank": 0.16518623475288413,
+    "val_compounds": 10,
+    "val_mse_check": 0.4657651771854072,
+    "test_captured": 0.286555994594486,
+    "test_rank": 0.03901728921254049
+  }
+}

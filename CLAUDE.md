@@ -255,6 +255,20 @@ Phase details from the spec:
   - Notebook `Perceiver_CPI_stepB.ipynb`; the ESM bank (152 MB for Davis) is built **on Kaggle** by `make_esm_bank.py` rather than uploaded.
   - Smoke-tested locally: both groups train, seeds differ, encoders differ, no NaNs, checkpoints stay 18.1 MB.
   - **Judge on validation**; protein sensitivity is computable on the validation set, so the test set need not be opened to choose a winner.
+- **Phase 5 Step B results (2026-11-15).** Ran on the user's Kaggle account, 2 sessions. Full report: `experiments/phase5/stepB_results.md`, rebuilt by `stepB_results.py`; raw numbers in `stepB_metrics.json`. Four Davis runs, 400 epochs, `train2`/`novelval`, 2 seeds per group.
+
+  | Group (mean of 2 seeds) | Validation MSE | Validation protein rank | Test MSE | Test protein rank | Test spread captured |
+  |---|---|---|---|---|---|
+  | paper encoder (learned) | 0.511 | +0.043 | **0.643** | -0.000 | 20% |
+  | ESM-2 encoder | 0.485 | **+0.119** | 0.734 | **+0.047** | **31%** |
+
+  Ceilings for protein rank: validation +0.231, test +0.414.
+  - **ESM moves protein ranking off zero — the first thing in Phase 5 that has.** The groups do not overlap on either split: the worse ESM seed still beats the better baseline seed. Spread captured rises from ~20% to ~31%.
+  - **But ESM costs test MSE: 0.643 -> 0.734**, also with no overlap. Validation MSE disagrees (0.511 -> 0.485) and **test should be believed here**: training keeps the best-validation epoch, so validation MSE is the quantity we optimised and is biased low. The rank finding has no such bias, and validation and test agree on it.
+  - **Partial fix, as Step A predicted:** 11% of the test ceiling. Not solved.
+  - **Small samples:** rank correlation averages over 10 validation compounds and 14 test compounds, 2 seeds per group. The *direction* is consistent across 4 independent comparisons; the exact values are not reliable.
+  - Validation predictions were not saved by training, so `validation_preds.py` regenerates them from each saved checkpoint (nothing retrained). Cross-check: all four recomputed validation MSEs match the training logs exactly.
+  - **Two Kaggle path bugs were found and fixed first** (commit `56014dd`), after the first ESM session died in 54 seconds: `make_esm_bank.py` and `protein_sensitivity.py` assumed the repo folder layout rather than the flat bundle, and the notebook searched only one folder deep for a previous session's results. Lesson recorded: smoke-test bundle scripts *inside an extracted bundle*, not from the repo.
 - **Phase 5 ideas** (try one at a time, judge on validation only, log in `experiments/results_log.md`):
   - **Priority 1 (from Step 0): a novel-pair validation set.** Carve a second validation set out of the training rows that holds out whole compounds *and* whole proteins, mirroring how the test set is built, and use it to pick the epoch. Keep the paper-style validation as well, so the comparison with the paper stays honest. Cheap to build (reuses `make_splits.py`), and it changes what every later experiment optimises, so do it first.
   - **Note on "train longer":** validation MSE was still falling at epoch 150 on Davis and Metz, but that validation measures memorisation. Re-judge this idea on the novel-pair validation before spending GPU time; more epochs may simply memorise harder.
