@@ -427,7 +427,7 @@ class TrainArgs(CommonArgs):
 
     kernel_size: int = 7
 
-    protein_encoder: Literal['learned', 'esm'] = 'learned'
+    protein_encoder: Literal['learned', 'esm', 'both'] = 'learned'
     """
     Change 5 in model_2d/CHANGES.md. 'learned' is the paper's original: a blank embedding that must
     learn what amino acids mean from the few hundred proteins in the training set. 'esm' instead
@@ -678,7 +678,7 @@ class PredictArgs(CommonArgs):
 
     kernel_size: int = 7
 
-    protein_encoder: Literal['learned', 'esm'] = 'learned'
+    protein_encoder: Literal['learned', 'esm', 'both'] = 'learned'
     """
     Change 5 in model_2d/CHANGES.md. 'learned' is the paper's original: a blank embedding that must
     learn what amino acids mean from the few hundred proteins in the training set. 'esm' instead

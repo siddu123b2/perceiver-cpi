@@ -72,6 +72,34 @@ EXPERIMENTS = {
     'davis_esm_s1': {'dataset': 'davis', 'train': 'train2', 'val': 'novelval', 'encoder': 'esm',
                      'seed': 1, 'epochs': 400, 'group': 'esm',
                      'why': 'ESM-2 encoder, second seed'},
+
+    # Step C, track 1 (Davis, the protein question). Step B: ESM alone moved protein ranking off
+    # zero (-0.00 -> +0.05 on test) but cost test MSE (0.643 -> 0.734). 'both' keeps the paper's
+    # encoder and adds ESM through a gate starting at zero, so it begins as the baseline.
+    'davis_both_s0': {'dataset': 'davis', 'train': 'train2', 'val': 'novelval', 'encoder': 'both',
+                      'seed': 0, 'epochs': 400, 'group': 'both',
+                      'why': "the paper's encoder plus ESM-2, gated"},
+    'davis_both_s1': {'dataset': 'davis', 'train': 'train2', 'val': 'novelval', 'encoder': 'both',
+                      'seed': 1, 'epochs': 400, 'group': 'both',
+                      'why': "the paper's encoder plus ESM-2, second seed"},
+
+    # Step C, track 2 (Metz and KIBA, the accuracy question). Both sit far above even their
+    # compound-only ceilings (Metz 0.719 vs 0.332, KIBA 0.575 vs 0.270), which needs no protein
+    # work: it is under-training. Phase 4 used 150 epochs and no ensemble. KIBA gets 200 rather
+    # than 400 because its validation curve flattened around epoch 90 in Phase 4, and it is ~4x
+    # the cost per epoch of the other two.
+    'metz_long_s0': {'dataset': 'metz', 'train': 'train2', 'val': 'novelval', 'encoder': 'learned',
+                     'seed': 0, 'epochs': 400, 'group': 'metz',
+                     'why': '400 epochs instead of 150'},
+    'metz_long_s1': {'dataset': 'metz', 'train': 'train2', 'val': 'novelval', 'encoder': 'learned',
+                     'seed': 1, 'epochs': 400, 'group': 'metz',
+                     'why': 'second seed, so the two can be averaged'},
+    'kiba_long_s0': {'dataset': 'kiba', 'train': 'train2', 'val': 'novelval', 'encoder': 'learned',
+                     'seed': 0, 'epochs': 200, 'group': 'kiba',
+                     'why': '200 epochs instead of 150'},
+    'kiba_long_s1': {'dataset': 'kiba', 'train': 'train2', 'val': 'novelval', 'encoder': 'learned',
+                     'seed': 1, 'epochs': 200, 'group': 'kiba',
+                     'why': 'second seed, so the two can be averaged'},
 }
 ESM_BANK = HERE / 'esm_bank_davis.npz'   # built by make_esm_bank.py
 
@@ -96,7 +124,7 @@ def command(name, epochs=None):
     epochs = epochs or spec['epochs']
     seed = str(spec['seed'])
     extra = ([] if spec['encoder'] == 'learned' else
-             ['--protein_encoder', 'esm', '--esm_bank', str(ESM_BANK)])
+             ['--protein_encoder', spec['encoder'], '--esm_bank', str(ESM_BANK)])
     return [sys.executable, str(HERE / 'train_quiet.py'),
             '--data_path', str(split_file(dataset, spec['train'])),
             '--separate_val_path', str(split_file(dataset, spec['val'])),

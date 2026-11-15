@@ -25,7 +25,8 @@ OUT = UPLOAD / 'perceiver_cpi_data.zip'
 DATASETS = ['davis', 'metz', 'kiba']   # kiba is included now so it never needs re-uploading
 PARTS = ['train2', 'novelval', 'train3', 'randomval', 'test']
 SCRIPTS = ['run_experiment.py', 'train_quiet.py', 'evaluate.py',
-           'protein_sensitivity.py', 'make_esm_bank.py']
+           'protein_sensitivity.py', 'make_esm_bank.py', 'validation_preds.py',
+           'stepB_results.py']
 
 
 def git(*args):
@@ -63,9 +64,8 @@ def main():
                 for name, path in files.items() if name.startswith('data/')}
     (UPLOAD / 'data_md5.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
 
-    for notebook in ('Perceiver_CPI_phase5.ipynb', 'Perceiver_CPI_stepB.ipynb'):
-        if (HERE / notebook).exists():
-            shutil.copy2(HERE / notebook, UPLOAD / notebook)
+    for notebook in sorted(HERE.glob('Perceiver_CPI_*.ipynb')):
+        shutil.copy2(notebook, UPLOAD / notebook.name)
     print(info + f'Wrote {len(files) + 1} files to {OUT} ({OUT.stat().st_size / 1024 ** 2:.1f} MB)')
     print(f'Upload folder: {UPLOAD}')
 

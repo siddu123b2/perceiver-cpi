@@ -36,7 +36,8 @@ def predict(model: InteractionModel,
         dummy_array = [0]*args.sequence_length
         # Change 5 (CHANGES.md): in ESM mode the model looks its protein up in a precomputed table,
         # so pass one index per row instead of 500 token IDs. The 'learned' path below is unchanged.
-        if getattr(args, 'protein_encoder', 'learned') == 'esm':
+        encoder_mode = getattr(args, 'protein_encoder', 'learned')
+        if encoder_mode == 'esm':
             sequence_tensor = torch.LongTensor([model.esm_index[t[0]] for t in protein_sequence_batch])
         else:
             sequence_2_ar = [list(tokenizer.encode(list(t[0]))) + dummy_array for t in protein_sequence_batch]
@@ -50,6 +51,11 @@ def predict(model: InteractionModel,
         
             # convert list_sequence to tensor
             sequence_tensor = torch.LongTensor(new_ar)
+            if encoder_mode == 'both':
+                # Change 6: carry the protein's row in the ESM table as one extra column on the
+                # end, so a single tensor still holds everything forward() needs.
+                esm_index = torch.LongTensor([[model.esm_index[t[0]]] for t in protein_sequence_batch])
+                sequence_tensor = torch.cat([sequence_tensor, esm_index], dim=1)
         add_feature = torch.Tensor(add_feature)
 
         # Make predictions

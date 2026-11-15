@@ -53,7 +53,10 @@ def run(name: str, spec: dict, folder: Path) -> bool:
         extra = []
         if spec['encoder'] == 'esm':
             if not BANK.exists():
-                sys.exit(f'{name} needs the ESM bank at {BANK}. Build it with make_esm_bank.py davis')
+                # e.g. a Kaggle session that trains Metz and only carried the Davis runs across
+                print(f'{name}: skipped, needs the ESM bank at {BANK} '
+                      f'(build it with make_esm_bank.py davis)')
+                return False
             checkpoint = patched_checkpoint(checkpoint, Path(tmp))
             extra = ['--protein_encoder', 'esm', '--esm_bank', str(BANK)]
         command = [sys.executable, str(ROOT / 'model_2d' / 'predict.py'),

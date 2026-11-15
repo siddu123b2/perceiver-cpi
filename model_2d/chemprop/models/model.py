@@ -54,14 +54,19 @@ class InteractionModel(nn.Module):
         # original, a blank table trained from scratch on the few hundred proteins in the training
         # set. 'esm' reads it from ESM-2 instead, pretrained on millions of sequences. Everything
         # after this point is identical in both modes.
+        # Change 6 adds 'both': the learned table AND ESM-2, added together through a gate that
+        # starts at zero, so the model begins as an exact copy of the paper's and learns for itself
+        # how much pretrained protein information to mix in.
         self.protein_encoder = getattr(args, 'protein_encoder', 'learned')
-        if self.protein_encoder == 'esm':
+        if self.protein_encoder in ('esm', 'both'):
             bank, width, self.esm_index = load_esm_bank(args.esm_bank, args.sequence_length)
             # frozen: the protein features are fixed, only the projection below learns.
             # persistent=False keeps the (large) table out of the saved checkpoint; it is rebuilt
             # from the bank file whenever the model is constructed.
             self.register_buffer('esm_bank', bank, persistent=False)
             self.esm_project = nn.Linear(width, args.prot_hidden)
+            if self.protein_encoder == 'both':
+                self.esm_gate = nn.Parameter(torch.zeros(1))
         self.embedding_xt = nn.Embedding(args.vocab_size, args.prot_hidden)
         self.conv_in = nn.Conv1d(in_channels=args.sequence_length, out_channels=args.prot_1d_out, kernel_size=1)
         self.convs = nn.ModuleList([nn.Conv1d(args.prot_hidden, 2*args.prot_hidden, args.kernel_size, padding=args.kernel_size//2) for _ in range(args.prot_1dcnn_num)])   # convolutional layers
@@ -245,15 +250,23 @@ class InteractionModel(nn.Module):
                                        atom_features_batch, bond_features_batch))
 
         #protein feature extraction
-        if self.protein_encoder == 'esm':
-            # sequence_tensor holds one protein index per row (see train.py / predict.py)
-            index = sequence_tensor.to(self.esm_bank.device).view(-1)
-            # the bank is float16 to stay small; cast this batch only
-            features = self.esm_bank[index].to(self.esm_project.weight.dtype)
-            embedded_xt = self.esm_project(features.to(self.esm_project.weight.device))
-        else:
+        if self.protein_encoder == 'learned':
             sequence = sequence_tensor.to(self.embedding_xt.weight.device)  # compat fix 1: was .cuda()
             embedded_xt = self.embedding_xt(sequence)
+        else:
+            # 'esm': sequence_tensor is one protein index per row.
+            # 'both': it is the 500 token IDs with that index appended as one extra column
+            #         (see train.py / predict.py).
+            if self.protein_encoder == 'both':
+                tokens, index = sequence_tensor[:, :-1], sequence_tensor[:, -1]
+            else:
+                tokens, index = None, sequence_tensor.view(-1)
+            # the bank is float16 to stay small; cast this batch only
+            features = self.esm_bank[index.to(self.esm_bank.device)].to(self.esm_project.weight.dtype)
+            embedded_xt = self.esm_project(features.to(self.esm_project.weight.device))
+            if tokens is not None:
+                learned = self.embedding_xt(tokens.to(self.embedding_xt.weight.device))
+                embedded_xt = learned + self.esm_gate * embedded_xt
         input_nn = self.conv_in(embedded_xt)
 
         conv_input = input_nn.permute(0, 2, 1)

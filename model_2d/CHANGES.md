@@ -111,6 +111,43 @@ Single-threaded (`OMP_NUM_THREADS=1`, which makes CPU maths exactly repeatable):
 
 **Effect on results with the default settings: none.** Tested 2026-11-13 on a 400-row Davis sample, 2 epochs, single-threaded: this code with default arguments against the original code from git gave **identical test predictions (max difference 0.0)**. In `esm` mode training runs and predicts normally; the predictions differ, which is the point.
 
+### Change 6: `--protein_encoder both` (2026-11-15, approved)
+
+**Why.** Step B (`experiments/phase5/stepB_results.md`) measured a trade-off. ESM-2 on its own was the
+first thing to make the model read the protein at all (within-compound protein ranking went from
+-0.00 to +0.047 on test, spread captured 20% -> 31%), but it cost accuracy (test MSE 0.643 -> 0.734).
+Both effects held across two seeds with no overlap between the groups. `both` is an attempt to keep
+the accuracy of the paper's encoder and the protein awareness of ESM-2 at the same time.
+
+**What changed.** The same four files as Change 5, still behind the same flag, which now accepts a
+third value. `learned` and `esm` behave exactly as before.
+
+1. `chemprop/args.py` - `--protein_encoder` is now `{learned, esm, both}` (both `TrainArgs` and
+   `PredictArgs`).
+2. `chemprop/models/model.py` - in `both` mode the model builds **both** protein representations and
+   adds them:
+
+       embedded_xt = embedding_xt(tokens) + esm_gate * esm_project(esm_features)
+
+   `esm_gate` is a single learnable number **initialised to zero**, so at the start of training the
+   model is an exact copy of the paper's and the ESM branch contributes nothing. Training decides how
+   much pretrained protein information to mix in. Everything after this line - the CNN blocks, the
+   cross-attention, the head - is untouched, as in Change 5.
+3. `chemprop/train/train.py` and 4. `chemprop/train/predict.py` - `both` needs the 500 token IDs *and*
+   the protein's row in the ESM table, so the index is appended as one extra column and `forward`
+   splits it off (`sequence_tensor[:, :-1]` and `[:, -1]`). The `learned` and `esm` paths are unchanged.
+
+**Why a gate rather than a plain sum.** Starting at zero means the change cannot make the model worse
+at the outset, and the learned value afterwards is itself a readable result: it says how much the
+model wanted ESM. A plain sum would have risked reproducing the ESM-only run, which was less accurate.
+
+**Effect on results with the default settings: none.** Tested 2026-11-15 on a 400-row Davis sample,
+2 epochs, single-threaded, against the code at the previous commit: **identical test predictions
+(max difference 0.0)**. Also checked: `both` trains with no NaNs, the checkpoint stays 18.1 MB (the
+ESM table is still excluded), the gate moves off zero during training (+0.00141 after 2 epochs, so the
+branch does receive gradient), predictions differ from `learned`, and `predict.py` reproduces the
+training-time predictions in `both` mode to 4e-16.
+
 ### Not a change: `mc_dropout.py` (our own file)
 
 `model_2d/mc_dropout.py` adds MC-dropout predictions: the normal score, plus a ± from 30 predictions made with dropout on. It only *uses* the official code (`load_checkpoint`, `predict`) and changes none of it.

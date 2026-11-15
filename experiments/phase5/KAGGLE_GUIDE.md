@@ -157,3 +157,37 @@ did was wrong, and no GPU time was lost — it stopped after 54 seconds.
 **To pick up the fixes:** re-run `make_kaggle_dataset.py`, upload a **New Version** of the
 `perceiver cpi data` dataset, re-import `Perceiver_CPI_stepB.ipynb`, then run session 2 again.
 Cell 1 now prints `Carried over N earlier run(s).` so you can see at a glance whether it worked.
+
+---
+
+# Step C: four sessions
+
+Notebook: **`Perceiver_CPI_stepC.ipynb`**. Upload a **New Version** of the `perceiver cpi data`
+dataset first, then import the notebook.
+
+| Session | What it trains | Roughly |
+|---|---|---|
+| `A` | Davis, the paper's encoder **plus** ESM-2 (gated), 2 seeds | 5-6 h |
+| `B` | Metz, 400 epochs instead of 150, 2 seeds | 7-8 h |
+| `C` | KIBA, 200 epochs instead of 150, seed 0 | 6-7 h |
+| `D` | KIBA, the same, seed 1 | 6-7 h |
+
+Each one: set `SESSION` in cell 1, **Add Input** -> the dataset, **GPU T4 x2**,
+**Persistence -> Files only**, **Save Version -> Save & Run All**.
+
+From session B onwards also **Add Input -> Your Work -> Notebooks** and attach the previous
+session's output, so finished runs are skipped and the end-of-notebook tables cover everything.
+Cell 1 prints `Carried over N earlier run(s).` - check that line.
+
+Sessions are split so none of them comes near Kaggle's 12-hour limit. They are independent, so you
+can run them in any order, or stop after A if you want to see the protein result first.
+
+**What each session answers**
+
+- **A** is the protein question. Step B showed ESM-2 made the model read the protein for the first
+  time (ranking 0.00 -> +0.05) but cost accuracy (test MSE 0.643 -> 0.734). Session A keeps both
+  encoders, with the ESM half behind a gate starting at zero, so it begins as an exact copy of the
+  paper's model. It succeeds if it keeps the old accuracy *and* the new protein ranking.
+- **B, C and D** are the accuracy question, and need no new code. Metz and KIBA sit far above what
+  a model could reach ignoring proteins altogether (Metz 0.719 vs 0.332, KIBA 0.575 vs 0.270), which
+  is under-training. More epochs, plus a second seed to average.
