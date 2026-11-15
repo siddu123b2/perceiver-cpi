@@ -1,0 +1,128 @@
+{
+  "davis": {
+    "unit": "pKd",
+    "bands": {
+      "strong": 7.0,
+      "moderate": 6.0,
+      "source": "pKd >= 7 (Kd <= 100 nM) is the standard binder cut-off used to binarise Davis in the DTA literature. The moderate line at pKd 6 (1 uM) is our own, following normal pharmacology practice.",
+      "floor_note": "Davis records non-binding as exactly 5.0, so about 70% of its labels sit at the bottom of the scale.",
+      "confidence_cuts": [
+        0.1622,
+        0.1783
+      ],
+      "confidence_calibration": {
+        "split": "fold0_novelval.csv",
+        "rows": 800,
+        "of_rows": 840,
+        "mc_samples": 30,
+        "seed": 0,
+        "note": "Tertiles of the MC-dropout spread on the validation set. A relative label only - this is not a confidence interval."
+      }
+    },
+    "scope": {
+      "compounds": 68,
+      "proteins": 379
+    },
+    "scope_thresholds": {
+      "compound": 0.192,
+      "protein": 0.109,
+      "basis": "10th percentile of each training entry's similarity to its nearest other training entry. Compounds: Tanimoto on Morgan r2 2048-bit fingerprints. Proteins: Jaccard overlap of 3-mers."
+    },
+    "checkpoints": [
+      "model_0.pt",
+      "model_1.pt"
+    ],
+    "source_runs": [
+      "experiments/phase5/runs/davis_base_s0",
+      "experiments/phase5/runs/davis_base_s1"
+    ],
+    "test_mse": 0.622,
+    "test_ci": null,
+    "paper_mse": 0.463,
+    "paper_ci": 0.638,
+    "guess_average_mse": 0.751,
+    "why": "Phase 5 Step B, 400 epochs, two seeds averaged"
+  },
+  "metz": {
+    "unit": "pKi",
+    "bands": {
+      "strong": 7.0,
+      "moderate": 6.0,
+      "source": "No binarisation threshold is standard for Metz. We apply the same pharmacology convention as Davis: pKi 7 = 100 nM, pKi 6 = 1 uM. This is our assumption, not a published cut-off.",
+      "confidence_cuts": [
+        0.1657,
+        0.1975
+      ],
+      "confidence_calibration": {
+        "split": "fold0_val.csv",
+        "rows": 800,
+        "of_rows": 4656,
+        "mc_samples": 30,
+        "seed": 0,
+        "note": "Tertiles of the MC-dropout spread on the validation set. A relative label only - this is not a confidence interval."
+      }
+    },
+    "scope": {
+      "compounds": 1423,
+      "proteins": 170
+    },
+    "scope_thresholds": {
+      "compound": 0.305,
+      "protein": 0.102,
+      "basis": "10th percentile of each training entry's similarity to its nearest other training entry. Compounds: Tanimoto on Morgan r2 2048-bit fingerprints. Proteins: Jaccard overlap of 3-mers."
+    },
+    "checkpoints": [
+      "model_0.pt"
+    ],
+    "source_runs": [
+      "experiments/phase4_baseline/runs/metz"
+    ],
+    "test_mse": 0.762,
+    "test_ci": 0.634,
+    "paper_mse": 0.658,
+    "paper_ci": 0.675,
+    "guess_average_mse": 0.91,
+    "why": "Phase 4 baseline, 150 epochs, single model"
+  },
+  "kiba": {
+    "unit": "KIBA score",
+    "bands": {
+      "strong": 12.1,
+      "moderate": 11.1,
+      "source": "KIBA score >= 12.1 is the standard binder cut-off in the DTA literature (the transformed equivalent of the original KIBA <= 3.0). The moderate line at 11.1 is the lower edge of the crowded band identified in the Perceiver CPI paper, and is our own choice.",
+      "confidence_cuts": [
+        0.2417,
+        0.277
+      ],
+      "confidence_calibration": {
+        "split": "fold0_val.csv",
+        "rows": 800,
+        "of_rows": 15346,
+        "mc_samples": 30,
+        "seed": 0,
+        "note": "Tertiles of the MC-dropout spread on the validation set. A relative label only - this is not a confidence interval."
+      }
+    },
+    "scope": {
+      "compounds": 2068,
+      "proteins": 229
+    },
+    "scope_thresholds": {
+      "compound": 0.333,
+      "protein": 0.103,
+      "basis": "10th percentile of each training entry's similarity to its nearest other training entry. Compounds: Tanimoto on Morgan r2 2048-bit fingerprints. Proteins: Jaccard overlap of 3-mers."
+    },
+    "checkpoints": [
+      "model_0.pt"
+    ],
+    "source_runs": [
+      "experiments/phase4_baseline/runs/kiba"
+    ],
+    "test_mse": 0.575,
+    "test_ci": 0.565,
+    "paper_mse": 0.522,
+    "paper_ci": 0.638,
+    "guess_average_mse": 0.553,
+    "why": "Phase 4 baseline, 150 epochs, single model"
+  }
+}

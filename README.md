@@ -2,7 +2,9 @@
 
 Predicts how strongly a compound (SMILES) binds to a protein (amino-acid sequence), using the Perceiver CPI model (Nguyen et al., *Bioinformatics* 2023) trained on one of three benchmark datasets: Davis, KIBA or Metz. Each dataset uses its own scale, so scores from different models can't be compared with each other.
 
-> **Status:** Phase 3 (splits) is done. The model code runs, the three datasets are cleaned, and the 5-fold train/val/test splits are built and checked for leakage. Training the baseline (on Google Colab) comes next. See [CLAUDE.md](CLAUDE.md) for the full plan and phase status.
+> **Status:** Phases 0-7 are done. The three models are trained, `predict()` works, and the FastAPI backend runs with tests passing. Phase 8 (the web page) is in progress. See [CLAUDE.md](CLAUDE.md) for the full plan and phase status.
+>
+> **Honest summary of accuracy:** all three models are worse than the published paper, and they are much better at telling compounds apart than proteins. Both are measured, explained and reported below rather than glossed over.
 
 **Requirements so far:** Windows, Git, Python 3.12 (`py -3.12`). Model training runs on Google Colab, because this machine has no NVIDIA GPU.
 
@@ -106,4 +108,76 @@ For predictions with a ± (MC dropout), see [model_2d/mc_dropout.py](model_2d/mc
 
 ## Running the app
 
-Not written yet. This section is added in Phases 7 and 8.
+### 1. Build the model registry (once)
+
+Copies the trained checkpoints into `models/`, writes a model card for each, and works out the
+"is this input anything like the training data?" thresholds. Takes a few minutes.
+
+```
+.venv\Scripts\python.exe models\build_registry.py
+.venv\Scripts\python.exe models\calibrate_confidence.py
+```
+
+The second one calibrates the low/medium/high confidence label on each model's **validation** set.
+The test set is never used for this.
+
+### 2. Start the backend
+
+```
+.venv\Scripts\python.exe -m uvicorn backend.app:app --reload --port 8000
+```
+
+Open <http://127.0.0.1:8000/docs> for an interactive page you can try every endpoint from.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /health` | Is the server up, and can it load the models |
+| `GET /models` | What the dropdown should offer, with each model's honest accuracy |
+| `POST /predict` | `{smiles, sequence, model}` -> score, unit, confidence, band, warnings |
+| `GET /history` | Recent predictions, newest first (SQLite, `backend/history.db`) |
+| `POST /predict-3d` | Returns 501. The 3D branch is a separate phase. |
+
+The first prediction takes a few seconds while the model loads; after that it is cached in memory.
+
+Try it from the command line:
+
+```
+curl -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" ^
+  -d "{\"smiles\":\"CC(=O)Oc1ccccc1C(=O)O\",\"sequence\":\"MVHLTPEEK...\",\"model\":\"davis\"}"
+```
+
+Or without the server at all:
+
+```
+cd model_2d
+..\.venv\Scripts\python.exe predict_api.py --smiles "CC(=O)Oc1ccccc1C(=O)O" --sequence "MKKFF..." --model davis
+```
+
+### 3. Tests
+
+```
+.venv\Scripts\python.exe -m pytest backend -v
+```
+
+### How to read a prediction
+
+- **score** is in that model's own unit (pKd, pKi or KIBA score). Higher means stronger binding.
+  **Never compare a score from one model with a score from another** - the three datasets are on
+  different scales and were never merged.
+- **band** (strong / moderate / weak) uses the published cut-off where one exists: pKd >= 7 for
+  Davis, KIBA score >= 12.1. The second cut-off in each case is our own assumption and says so in
+  the response.
+- **confidence** is the spread of 30 predictions made with dropout left switched on. **It is not a
+  95% confidence interval** - measured coverage is 33-63%. It is shown as a relative
+  low/medium/high label, with the cut-offs calibrated on validation data.
+- **warnings** always include the protein caveat, and will tell you when your compound or protein
+  is outside what the model was trained on.
+
+### Known limitations, measured
+
+| | What we measured |
+|---|---|
+| Accuracy vs the paper | Davis 0.622 vs 0.463, Metz 0.762 vs 0.658, KIBA 0.575 vs 0.522 (test MSE, lower is better) |
+| Protein sensitivity | Hold the compound fixed and change the protein, and the model's ranking is close to random. See [experiments/phase5/protein_sensitivity.md](experiments/phase5/protein_sensitivity.md). |
+| Protein length | Only the first 499 residues are used, as in the published model |
+| Scope | Trained on kinase inhibitors and kinases only |

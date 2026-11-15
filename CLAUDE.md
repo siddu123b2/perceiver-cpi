@@ -151,8 +151,8 @@ Every phase follows this loop: do it → run a test that proves it works → exp
 | 3 | Splits (§4) + leakage checks | done (2026-10-29), see `data/splits/summary.md`. 90 files, 340 leakage checks pass, checker caught 6/6 planted breaks |
 | 4 | Baseline, **reduced scope** (user decision 2026-10-29): ONE model per dataset (Davis, KIBA, Metz), trained on novel-pair **fold 0**, on the college's GPU via Google Colab. Report MSE, CI, Pearson, Spearman, rm² next to the paper's | **done (2026-11-12)**, see `experiments/phase4_baseline/results.md`. All three trained 150 epochs on an NVIDIA L4; resume was used 8 times and worked. **Results are worse than the paper on every metric, and the models barely beat guessing the training average** (KIBA is worse than it). Rebuild the report with `evaluate.py` |
 | 5 | Improve accuracy, one change at a time, using validation only; log in `experiments/results_log.md` | todo |
-| 6 | Model registry (`models/<dataset>/` + `model_card.md`), `model_2d/predict_api.py`, `MODEL_SELECTION.md` | todo |
-| 7 | Backend: `/health`, `/models`, `/predict`, `/history`, `/predict-3d` placeholder; pytest | todo |
+| 6 | Model registry (`models/<dataset>/` + `model_card.md`), `model_2d/predict_api.py`, `MODEL_SELECTION.md` | **done (2026-11-15)** |
+| 7 | Backend: `/health`, `/models`, `/predict`, `/history`, `/predict-3d` placeholder; pytest | **done (2026-11-15)**, 14 tests pass |
 | 8 | Frontend: one page (navy background, teal inputs, orange prediction); README end to end | todo |
 
 Phase details from the spec:
@@ -285,6 +285,16 @@ Phase details from the spec:
   - Band thresholds: use commonly used values per scale and cite the source of each. If there is no standard, state the assumption and make it configurable.
   - Reject invalid SMILES and non-amino-acid letters. Warn if the sequence is longer than 500 (it will be truncated) or very unlike the training proteins.
 - **Phase 7:** history goes in MongoDB per the group's design. Ask before installing it; SQLite is acceptable for the basic version.
+- **Phases 6 and 7 as built (2026-11-15).** `models/MODEL_SELECTION.md` is the summary; each dataset also has `models/<dataset>/model_card.md`.
+  - **Served models, chosen on principle not on the test score:** Davis = the two 400-epoch Step B seeds averaged (test MSE **0.622**); Metz and KIBA = the Phase 4 baselines (0.762, 0.575). The Step 1 Metz runs were *not* used, because `metz_A` and `metz_B` differ in how their validation set was built, so picking between them could only have been done on the test score. The ESM models are not served: better protein ranking, worse accuracy.
+  - **Rebuild:** `models/build_registry.py` then `models/calibrate_confidence.py`. `SERVED` in the first is the single place to swap in Step C's models.
+  - **Band thresholds** are published where one exists (Davis pKd >= 7, KIBA >= 12.1); the second cut-off of each pair is our own and is labelled as such in the API response (`band_source`).
+  - **Two thresholds are calibrated from data, because guessing was measurably wrong.**
+    - *Scope* (when to warn "this is an extrapolation"): the 10th percentile of each training entry's similarity to its nearest other training entry. Davis 0.192 compound / 0.109 protein; Metz 0.305/0.102; KIBA 0.333/0.103. **A guessed 0.5 would have flagged nearly every real kinase** - Davis kinases sit at a median 3-mer similarity of only 0.22 to each other, while haemoglobin (genuinely out of scope) scores 0.046.
+    - *Confidence label*: tertiles of the MC-dropout spread over 800 rows of each model's own **validation** set. Davis [0.162, 0.178], Metz [0.166, 0.198], KIBA [0.242, 0.277]. The spread range is narrow, so the label is a weak signal - and it is never shown as a confidence interval (measured coverage 33-63%).
+  - **One-pair-at-a-time vs the batched evaluation differ slightly, and this is inherent to chemprop.** A molecule's graph is padded to the largest number of bonds-per-atom *in its batch*, and the padding row's message is not exactly zero, so an embedding shifts a little with batch contents. Measured on 40 Davis test rows: mean 0.0067, max 0.0246, MSE 0.3207 -> 0.3216. Far below the model's RMSE of 0.80, so the app scores one pair at a time and documents it. A given input always returns the same answer.
+  - **Backend:** FastAPI, `backend/app.py`. History is **SQLite** (`backend/history.db`, git-ignored), which CLAUDE.md allows for the basic version; MongoDB was not installed. 14 pytest tests cover health, the model list, a real prediction, determinism, scope warnings (including haemoglobin being flagged), six kinds of bad input, history, and the 3D placeholder returning 501.
+  - **New dependencies installed:** fastapi, uvicorn, httpx, pytest (~20 MB total).
 
 ## 7. Rules
 
