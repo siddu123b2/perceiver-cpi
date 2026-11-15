@@ -16,10 +16,11 @@ The first /predict is slow (a few seconds) because the model loads then; after t
 memory and responses are fast.
 """
 import json
+import os
 import sqlite3
 import sys
 import time
-from contextlib import closing
+from contextlib import asynccontextmanager, closing
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -34,7 +35,27 @@ import predict_api                                        # noqa: E402
 
 DB_PATH = Path(__file__).resolve().parent / 'history.db'
 
+@asynccontextmanager
+async def lifespan(_app):
+    """Load the models before the server accepts requests.
+
+    Loading happens on first use otherwise, which makes the very first prediction take ~14 seconds
+    while every later one takes ~1.2. That is a poor surprise in a live demo, so we pay the cost at
+    startup instead: the server takes longer to come up and is then uniformly fast. Set
+    PERCEIVER_PRELOAD=0 to skip it (handy with --reload, which restarts on every edit).
+    """
+    if os.environ.get('PERCEIVER_PRELOAD', '1') != '0':
+        for name in predict_api.registry():
+            try:
+                predict_api._load(name)
+                print(f'  loaded model: {name}')
+            except Exception as error:                    # a missing checkpoint must not stop boot
+                print(f'  could NOT load model {name}: {error}')
+    yield
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title='Perceiver CPI — compound–protein binding affinity',
     version='1.0',
     description='Predicts how strongly a compound binds a protein, using the Perceiver CPI model '
