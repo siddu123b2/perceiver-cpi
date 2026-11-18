@@ -1,12 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 
 /**
- * Molecular viewer, built on 3Dmol.js (BSD, David Koes and contributors) — the same library the
- * supplied viewer.zip uses, vendored at /vendor/3Dmol-min.js.
+ * Molecular viewer, on 3Dmol.js (BSD, David Koes and contributors), vendored at
+ * /vendor/3Dmol-min.js — the same library the supplied viewer.zip uses.
  *
- * Today it renders an experimentally solved complex pulled from the RCSB PDB, so the panel is a
- * working viewer rather than an empty box. When the 3D service lands it will hand us a predicted
- * structure instead: pass it in as `pdbData` and nothing else here has to change.
+ * The point of this panel is to look like a molecule, not like a wireframe. So the default view is
+ * a solid molecular SURFACE for the protein with the ligand sitting inside its pocket, which is how
+ * these complexes are normally illustrated. The residues lining the pocket are picked out in a
+ * warmer colour, so the cavity the drug occupies is visible rather than implied.
+ *
+ * Views:
+ *   pocket   surface over the pocket region only, protein ribbon behind it — the drug in its site
+ *   surface  the whole protein as a solid body, ligand showing through
+ *   ribbon   secondary structure, for seeing the fold
+ *
+ * When the docking service returns a predicted complex, pass it as `pdbData` and nothing else here
+ * changes.
  */
 
 function loadLibrary() {
@@ -23,124 +32,146 @@ function loadLibrary() {
   return loadLibrary.pending
 }
 
-const STYLES = {
-  ribbon: { label: 'Ribbon' },
-  surface: { label: 'Surface' },
-  sticks: { label: 'All atoms' },
+const VIEWS = [
+  ['pocket', 'Pocket'],
+  ['surface', 'Surface'],
+  ['ribbon', 'Ribbon'],
+]
+
+// Element colours for the ligand. Warm carbon against the cool protein makes the drug read
+// instantly, which is the whole job of the picture.
+const LIGAND_COLOURS = {
+  C: '#f5b942', N: '#4f8ef7', O: '#f0685f', S: '#f2d23b',
+  F: '#5fd4a8', Cl: '#5fd4a8', Br: '#c97b4a', I: '#a06cd5', P: '#f09a4a',
 }
 
-export default function Viewer3D({ pdbId = '1M17', pdbData = null, height = 'normal', controls = true, ligandCode = null }) {
+export default function Viewer3D({
+  pdbId = '1M17', pdbData = null, height = 'normal', controls = true, ligandCode = null,
+}) {
   const host = useRef(null)
   const viewer = useRef(null)
-  const [mode, setMode] = useState('ribbon')
+  const [view, setView] = useState('pocket')
+  const [spinning, setSpinning] = useState(true)
   const [problem, setProblem] = useState(null)
   const [ready, setReady] = useState(false)
 
-  // create the viewer and load the structure once
   useEffect(() => {
     let dead = false
-    let surface = null
-    const ligandSel = ligandCode ? { resn: ligandCode }
-                                 : { hetflag: true, not: { resn: ['HOH', 'WAT'] } }
+    setReady(false)
+    setProblem(null)
 
     loadLibrary()
       .then(($3Dmol) => {
         if (dead || !host.current) return
-        const view = $3Dmol.createViewer(host.current, { backgroundColor: '#070910', antialias: true })
-        viewer.current = view
+        host.current.innerHTML = ''
+        const v = $3Dmol.createViewer(host.current, {
+          backgroundColor: '#0b0f17',
+          antialias: true,
+        })
+        viewer.current = v
+        // a soft outline makes the surface read as a solid body rather than a flat blob
+        v.setViewStyle({ style: 'outline', color: '#000000', width: 0.03 })
 
-        const draw = () => {
+        const finish = () => {
           if (dead) return
-          view.setStyle({}, { cartoon: { color: '#3d4a63', opacity: 0.9 } })
-          // the ligand: the named chemical when we know it, else anything not protein or water
-          view.setStyle(ligandSel, {
-            stick: {
-              radius: 0.16,
-              colorscheme: { prop: 'elem', map: { C: '#22d3b8', N: '#4f8ef7', O: '#f06a6a', S: '#f0b429' } },
-            },
-          })
-          view.zoomTo(ligandSel)
-          view.zoom(0.55)
-          view.render()
+          if (!v.getModel()) {
+            setProblem('Could not fetch this structure. The viewer needs internet access to the PDB.')
+            return
+          }
           setReady(true)
-          if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            view.spin('y', 0.4)
+          paint(v, view, ligandCode)
+          if (spinning && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            v.spin('y', 0.35)
           }
         }
 
         if (pdbData) {
-          view.addModel(pdbData, 'pdb')
-          draw()
+          v.addModel(pdbData, 'pdb')
+          finish()
         } else {
-          $3Dmol.download(`pdb:${pdbId}`, view, {}, () => draw())
-          // download() gives no error path, so fail softly if nothing arrived
-          setTimeout(() => {
-            if (!dead && !viewer.current?.getModel()) {
-              setProblem('Structure could not be fetched. The viewer needs an internet connection to reach the PDB.')
-            }
-          }, 9000)
+          $3Dmol.download(`pdb:${pdbId}`, v, {}, finish)
+          setTimeout(() => { if (!dead && !ready && !viewer.current?.getModel()) finish() }, 11000)
         }
       })
       .catch((error) => !dead && setProblem(error.message))
 
     return () => {
       dead = true
-      try { viewer.current?.spin(false) } catch { /* already gone */ }
-      if (surface) surface = null
+      try { viewer.current?.spin(false) } catch { /* gone already */ }
       viewer.current = null
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pdbId, pdbData, ligandCode])
 
-  // restyle when the mode changes
   useEffect(() => {
-    const view = viewer.current
-    if (!view || !ready) return
-    const ligand = ligandCode ? { resn: ligandCode } : { hetflag: true, not: { resn: ['HOH', 'WAT'] } }
-    view.removeAllSurfaces()
-    if (mode === 'ribbon') {
-      view.setStyle({}, { cartoon: { color: '#3d4a63', opacity: 0.9 } })
-    } else if (mode === 'sticks') {
-      view.setStyle({}, { stick: { radius: 0.06, color: '#39455c' } })
-    } else {
-      view.setStyle({}, { cartoon: { color: '#2b3448', opacity: 0.35 } })
-      view.addSurface(window.$3Dmol.SurfaceType.VDW,
-        { opacity: 0.68, color: '#223049' }, { within: { distance: 8, sel: ligand } })
-    }
-    view.setStyle(ligand, {
-      stick: {
-        radius: 0.16,
-        colorscheme: { prop: 'elem', map: { C: '#22d3b8', N: '#4f8ef7', O: '#f06a6a', S: '#f0b429' } },
-      },
-    })
-    view.render()
-  }, [mode, ready, ligandCode])
+    if (ready && viewer.current) paint(viewer.current, view, ligandCode)
+  }, [view, ready, ligandCode])
+
+  useEffect(() => {
+    const v = viewer.current
+    if (!v || !ready) return
+    try { v.spin(spinning ? 'y' : false) } catch { /* ignore */ }
+  }, [spinning, ready])
 
   return (
     <div>
       <div className={`viewer${height === 'tall' ? ' tall' : ''}`}>
         <div className="viewer-canvas" ref={host} />
         {problem && <div className="viewer-note">{problem}</div>}
-        {!ready && !problem && <div className="viewer-note">Loading structure…</div>}
+        {!ready && !problem && <div className="viewer-note">Building structure…</div>}
         {controls && ready && (
           <div className="viewer-overlay">
-            {Object.entries(STYLES).map(([key, item]) => (
-              <button
-                key={key}
-                className={`sm ${mode === key ? '' : 'sec'}`}
-                onClick={() => setMode(key)}
-                type="button"
-              >
-                {item.label}
-              </button>
+            {VIEWS.map(([key, label]) => (
+              <button key={key} type="button" onClick={() => setView(key)}
+                className={`sm ${view === key ? '' : 'sec'}`}>{label}</button>
             ))}
+            <button type="button" className="sm sec" onClick={() => setSpinning((s) => !s)}>
+              {spinning ? 'Pause' : 'Spin'}
+            </button>
           </div>
         )}
       </div>
       <div className="legend">
-        <span><i style={{ background: '#22d3b8' }} /> Compound</span>
-        <span><i style={{ background: '#3d4a63' }} /> Protein</span>
+        <span><i style={{ background: '#f5b942' }} /> Compound</span>
+        <span><i style={{ background: '#5e7a9e' }} /> Pocket</span>
+        <span><i style={{ background: '#2f3d52' }} /> Protein</span>
         <span className="dim">Drag to rotate · scroll to zoom</span>
       </div>
     </div>
   )
+}
+
+/** Draw one of the three views. Separated out so switching view never rebuilds the model. */
+function paint(v, view, ligandCode) {
+  const $3Dmol = window.$3Dmol
+  const ligand = ligandCode
+    ? { resn: ligandCode }
+    : { hetflag: true, not: { resn: ['HOH', 'WAT', 'SO4', 'PO4', 'GOL', 'EDO', 'NA', 'CL', 'MG', 'ZN'] } }
+
+  v.removeAllSurfaces()
+  v.setStyle({}, {})
+
+  const ligandStyle = {
+    stick: { radius: 0.21, colorscheme: { prop: 'elem', map: LIGAND_COLOURS } },
+    sphere: { radius: 0.34, colorscheme: { prop: 'elem', map: LIGAND_COLOURS } },
+  }
+
+  if (view === 'ribbon') {
+    v.setStyle({}, { cartoon: { color: '#44557a', arrows: true, thickness: 0.9 } })
+  } else if (view === 'surface') {
+    v.setStyle({}, { cartoon: { color: '#2f3d52', opacity: 0.55 } })
+    v.addSurface($3Dmol.SurfaceType.MS,
+      { opacity: 0.88, color: '#36465f' }, { not: { hetflag: true } })
+  } else {
+    // pocket: ribbon for context, a solid surface only over the residues lining the site
+    v.setStyle({}, { cartoon: { color: '#263247', opacity: 0.75 } })
+    v.addSurface($3Dmol.SurfaceType.MS,
+      { opacity: 0.92, color: '#5e7a9e' },
+      { within: { distance: 7.0, sel: ligand }, not: { hetflag: true } })
+  }
+
+  v.setStyle(ligand, ligandStyle)
+  v.zoomTo(ligand)
+  v.zoom(view === 'ribbon' ? 0.42 : 0.62)
+  v.render()
 }
