@@ -29,7 +29,7 @@ const STYLES = {
   sticks: { label: 'All atoms' },
 }
 
-export default function Viewer3D({ pdbId = '1M17', pdbData = null, height = 'normal', controls = true }) {
+export default function Viewer3D({ pdbId = '1M17', pdbData = null, height = 'normal', controls = true, ligandCode = null }) {
   const host = useRef(null)
   const viewer = useRef(null)
   const [mode, setMode] = useState('ribbon')
@@ -40,6 +40,8 @@ export default function Viewer3D({ pdbId = '1M17', pdbData = null, height = 'nor
   useEffect(() => {
     let dead = false
     let surface = null
+    const ligandSel = ligandCode ? { resn: ligandCode }
+                                 : { hetflag: true, not: { resn: ['HOH', 'WAT'] } }
 
     loadLibrary()
       .then(($3Dmol) => {
@@ -50,14 +52,14 @@ export default function Viewer3D({ pdbId = '1M17', pdbData = null, height = 'nor
         const draw = () => {
           if (dead) return
           view.setStyle({}, { cartoon: { color: '#3d4a63', opacity: 0.9 } })
-          // the ligand: whatever is not protein or water
-          view.setStyle({ hetflag: true, not: { resn: ['HOH', 'WAT'] } }, {
+          // the ligand: the named chemical when we know it, else anything not protein or water
+          view.setStyle(ligandSel, {
             stick: {
               radius: 0.16,
               colorscheme: { prop: 'elem', map: { C: '#22d3b8', N: '#4f8ef7', O: '#f06a6a', S: '#f0b429' } },
             },
           })
-          view.zoomTo({ hetflag: true, not: { resn: ['HOH', 'WAT'] } })
+          view.zoomTo(ligandSel)
           view.zoom(0.55)
           view.render()
           setReady(true)
@@ -87,13 +89,13 @@ export default function Viewer3D({ pdbId = '1M17', pdbData = null, height = 'nor
       if (surface) surface = null
       viewer.current = null
     }
-  }, [pdbId, pdbData])
+  }, [pdbId, pdbData, ligandCode])
 
   // restyle when the mode changes
   useEffect(() => {
     const view = viewer.current
     if (!view || !ready) return
-    const ligand = { hetflag: true, not: { resn: ['HOH', 'WAT'] } }
+    const ligand = ligandCode ? { resn: ligandCode } : { hetflag: true, not: { resn: ['HOH', 'WAT'] } }
     view.removeAllSurfaces()
     if (mode === 'ribbon') {
       view.setStyle({}, { cartoon: { color: '#3d4a63', opacity: 0.9 } })
@@ -111,7 +113,7 @@ export default function Viewer3D({ pdbId = '1M17', pdbData = null, height = 'nor
       },
     })
     view.render()
-  }, [mode, ready])
+  }, [mode, ready, ligandCode])
 
   return (
     <div>

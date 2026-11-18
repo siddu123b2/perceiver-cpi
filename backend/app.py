@@ -32,6 +32,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'model_2d'))
 
 import predict_api                                        # noqa: E402
+from backend import structures                             # noqa: E402
 
 DB_PATH = Path(__file__).resolve().parent / 'history.db'
 
@@ -198,6 +199,22 @@ def history(limit: int = Query(20, ge=1, le=200)):
                          'sequence_length': len(row['sequence']),
                          'sequence': None}
                         for row in rows]}
+
+
+@app.post('/structure', summary='A real solved structure for this pair, if one exists')
+def structure(request: Predict3DRequest):
+    """Looks the pair up in BindingDB rather than predicting anything. See backend/structures.py
+    for what the three answer levels mean."""
+    try:
+        found = structures.find(request.smiles, request.sequence)
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
+    return found
+
+
+@app.get('/structure/coverage', summary='How much of the structure index is loaded')
+def structure_coverage():
+    return structures.stats()
 
 
 @app.post('/predict-3d', status_code=501, summary='3D binding pose — not built yet')

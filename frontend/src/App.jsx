@@ -1,8 +1,20 @@
 import { useCallback, useEffect, useState } from 'react'
 import Backdrop from './Backdrop.jsx'
 import Viewer3D from './Viewer3D.jsx'
-import { getHealth, getHistory, getModels, predict } from './api.js'
+import { getHealth, getHistory, getModels, getStructure, predict } from './api.js'
 import { DATASET_GUIDE, EXAMPLES } from './datasets.js'
+
+
+const LEVEL_TEXT = {
+  exact_complex: { title: 'Solved complex', tone: 'ok',
+    note: 'This exact compound and protein have been crystallised together. What you see is the experimental structure, not a prediction.' },
+  same_target: { title: 'Solved target', tone: '',
+    note: 'A real structure of this protein, bound to a different ligand. The fold and the pocket are genuine; the molecule shown is not the one you entered.' },
+  same_compound: { title: 'Solved compound', tone: '',
+    note: 'This compound has been crystallised bound to a different protein. Useful for the molecule shape, not for this particular pairing.' },
+  none: { title: 'No solved structure', tone: '',
+    note: 'Nothing on record for either side of this pair. A predicted pose would need docking.' },
+}
 
 const Info = () => (
   <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -86,6 +98,7 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [online, setOnline] = useState(null)
   const [history, setHistory] = useState([])
+  const [structure, setStructure] = useState(null)
 
   const loadHistory = useCallback(() => {
     getHistory(6).then((h) => setHistory(h.history)).catch(() => {})
@@ -102,10 +115,13 @@ export default function App() {
 
   async function run(event) {
     event.preventDefault()
-    setBusy(true); setError(null); setResult(null)
+    setBusy(true); setError(null); setResult(null); setStructure(null)
+    const clean = sequence.replace(/\s+/g, '')
     try {
-      setResult(await predict(smiles, sequence.replace(/\s+/g, ''), model))
+      setResult(await predict(smiles, clean, model))
       loadHistory()
+      // look up a real solved structure for this exact pair; never blocks the score
+      getStructure(smiles, clean).then(setStructure).catch(() => setStructure(null))
     } catch (problem) {
       setError(problem.message)
     } finally {
@@ -300,31 +316,44 @@ export default function App() {
         <section className="wrap sec" id="structure">
           <div className="sec-head">
             <span className="tag">Structure</span>
-            <h2>Binding pose</h2>
+            <h2>{structure ? LEVEL_TEXT[structure.level].title : 'Binding pose'}</h2>
             <p>
-              Explore an experimentally solved kinase–inhibitor complex. Predicted poses for your own
-              pair arrive with the structure service.
+              {structure
+                ? LEVEL_TEXT[structure.level].note
+                : 'Run a prediction and this panel searches for a real, experimentally solved structure of your pair.'}
             </p>
           </div>
           <div className="grid-2">
-            <Viewer3D pdbId="1M17" height="tall" />
+            <Viewer3D
+              pdbId={structure?.pdb_ids?.[0] || '1M17'}
+              ligandCode={structure?.ligand_code || null}
+              height="tall"
+            />
             <div className="card card-pad">
-              <h3>EGFR kinase domain with erlotinib</h3>
+              <h3>
+                {structure?.pdb_ids?.length
+                  ? <>PDB <span className="mono">{structure.pdb_ids[0].toUpperCase()}</span></>
+                  : 'EGFR kinase domain with erlotinib'}
+              </h3>
               <p className="muted small" style={{ marginTop: '0.5rem' }}>
-                PDB <span className="mono">1M17</span>. The compound sits in the ATP-binding cleft —
-                the pocket most kinase inhibitors compete for. Rotate to see how the molecule is
-                enclosed by the two lobes of the kinase.
+                {structure?.pdb_ids?.length
+                  ? 'Retrieved from the RCSB Protein Data Bank. Rotate to see how the ligand sits inside the pocket.'
+                  : 'PDB 1M17 — erlotinib in the ATP-binding cleft, the pocket most kinase inhibitors compete for. Shown as a reference until you run a prediction.'}
               </p>
               <div className="spec" style={{ flexDirection: 'column', gap: '0.7rem' }}>
-                <div><span>Target class</span><strong>Protein kinase</strong></div>
-                <div><span>Ligand</span><strong>Erlotinib (AQ4)</strong></div>
-                <div><span>Source</span><strong>RCSB PDB</strong></div>
+                <div><span>Source</span><strong>{structure ? 'BindingDB → RCSB PDB' : 'RCSB PDB'}</strong></div>
+                <div><span>Ligand code</span><strong>{structure?.ligand_code || '—'}</strong></div>
+                <div><span>Other entries</span><strong>
+                  {structure?.pdb_ids?.length > 1
+                    ? structure.pdb_ids.slice(1, 5).join(', ').toUpperCase()
+                    : '—'}
+                </strong></div>
               </div>
               <div className="note" style={{ marginTop: '1rem' }}>
                 <Info />
                 <span>
-                  Pose prediction and docking for arbitrary pairs connect here through
-                  <span className="mono"> POST /predict-3d</span>.
+                  Structures are looked up, never predicted. Pairs with nothing on record go to
+                  docking through <span className="mono">POST /predict-3d</span>.
                 </span>
               </div>
             </div>

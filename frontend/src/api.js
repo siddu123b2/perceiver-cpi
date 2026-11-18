@@ -33,7 +33,15 @@ export const predict = (smiles, sequence, model) =>
     body: JSON.stringify({ smiles, sequence, model }),
   })
 
-/** Reserved for the 3D branch. The backend answers 501 today, on purpose. */
+/** Looks up a real solved structure for this pair. Never predicts - see backend/structures.py. */
+export const getStructure = (smiles, sequence) =>
+  request('/structure', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ smiles, sequence }),
+  })
+
+/** Reserved for pose prediction by docking. The backend answers 501 today, on purpose. */
 export const predict3d = (smiles, sequence) =>
   request('/predict-3d', {
     method: 'POST',
