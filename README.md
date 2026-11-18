@@ -2,9 +2,13 @@
 
 Predicts how strongly a compound (SMILES) binds to a protein (amino-acid sequence), using the Perceiver CPI model (Nguyen et al., *Bioinformatics* 2023) trained on one of three benchmark datasets: Davis, KIBA or Metz. Each dataset uses its own scale, so scores from different models can't be compared with each other.
 
-> **Status:** Phases 0-7 are done. The three models are trained, `predict()` works, and the FastAPI backend runs with tests passing. Phase 8 (the web page) is in progress. See [CLAUDE.md](CLAUDE.md) for the full plan and phase status.
+> **Status:** the app runs end to end. Three trained models, a FastAPI backend, a structure
+> lookup that finds real solved complexes, and a web interface — all from one server. See
+> [CLAUDE.md](CLAUDE.md) for the full phase history.
 >
-> **Honest summary of accuracy:** all three models are worse than the published paper, and they are much better at telling compounds apart than proteins. Both are measured, explained and reported below rather than glossed over.
+> **Honest summary of accuracy:** all three models are worse than the published paper, and they are
+> much better at telling compounds apart than proteins. Both are measured, explained and reported
+> rather than glossed over. Third-party code is listed in [THIRD_PARTY.md](THIRD_PARTY.md).
 
 **Requirements so far:** Windows, Git, Python 3.12 (`py -3.12`). Model training runs on Google Colab, because this machine has no NVIDIA GPU.
 
@@ -107,6 +111,19 @@ Either way, extract `results_to_copy.zip` into `experiments\phase4_baseline\`. T
 For predictions with a ± (MC dropout), see [model_2d/mc_dropout.py](model_2d/mc_dropout.py).
 
 ## Running the app
+
+One command, one server — the interface, the API and the models together:
+
+```
+.venv\Scripts\python.exe -m uvicorn backend.app:app --port 8000
+```
+
+Then open <http://127.0.0.1:8000/>.
+
+Pick a dataset, search for a pair (or paste your own SMILES and sequence), and press Predict. You
+get an affinity score with its band and confidence, the measured laboratory value when the pair is
+in the source data, and — when anyone has solved it — the real experimental structure, with the
+pocket residues and polar contacts drawn.
 
 ### 1. Build the model registry (once)
 
