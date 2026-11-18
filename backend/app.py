@@ -32,7 +32,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'model_2d'))
 
 import predict_api                                        # noqa: E402
-from backend import structures                             # noqa: E402
+from backend import advisor, structures                    # noqa: E402
 
 DB_PATH = Path(__file__).resolve().parent / 'history.db'
 
@@ -199,6 +199,15 @@ def history(limit: int = Query(20, ge=1, le=200)):
                          'sequence_length': len(row['sequence']),
                          'sequence': None}
                         for row in rows]}
+
+
+@app.post('/advise', summary='Which model suits this pair, and why')
+def advise(request: Predict3DRequest):
+    """Measured, not generated: see backend/advisor.py."""
+    try:
+        return advisor.advise(request.smiles, request.sequence)
+    except predict_api.InvalidInput as error:
+        raise HTTPException(status_code=422, detail=str(error))
 
 
 @app.post('/structure', summary='A real solved structure for this pair, if one exists')

@@ -1,21 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 
 /**
- * Molecular viewer, on 3Dmol.js (BSD, David Koes and contributors), vendored at
- * /vendor/3Dmol-min.js — the same library the supplied viewer.zip uses.
+ * Molecular viewer on 3Dmol.js (BSD, David Koes and contributors), vendored at
+ * /vendor/3Dmol-min.js.
  *
- * The point of this panel is to look like a molecule, not like a wireframe. So the default view is
- * a solid molecular SURFACE for the protein with the ligand sitting inside its pocket, which is how
- * these complexes are normally illustrated. The residues lining the pocket are picked out in a
- * warmer colour, so the cavity the drug occupies is visible rather than implied.
+ * Styled the way structural biologists actually present a bound complex: bright green ribbon,
+ * the ligand in cyan, the residues lining the pocket picked out in their own colours, hydrogen
+ * bonds as yellow dashes, and a wireframe mesh over the cavity so the pocket is visible without
+ * hiding what is inside it. Contact residues are numbered, and the numbers are listed beside the
+ * viewer so the picture can be read rather than just admired.
  *
- * Views:
- *   pocket   surface over the pocket region only, protein ribbon behind it — the drug in its site
- *   surface  the whole protein as a solid body, ligand showing through
- *   ribbon   secondary structure, for seeing the fold
- *
- * When the docking service returns a predicted complex, pass it as `pdbData` and nothing else here
- * changes.
+ * When the docking service returns a predicted complex, pass it as `pdbData`; nothing else changes.
  */
 
 function loadLibrary() {
@@ -32,17 +27,18 @@ function loadLibrary() {
   return loadLibrary.pending
 }
 
-const VIEWS = [
-  ['pocket', 'Pocket'],
-  ['surface', 'Surface'],
-  ['ribbon', 'Ribbon'],
-]
+const VIEWS = [['pocket', 'Pocket'], ['surface', 'Surface'], ['ribbon', 'Ribbon']]
 
-// Element colours for the ligand. Warm carbon against the cool protein makes the drug read
-// instantly, which is the whole job of the picture.
-const LIGAND_COLOURS = {
-  C: '#f5b942', N: '#4f8ef7', O: '#f0685f', S: '#f2d23b',
-  F: '#5fd4a8', Cl: '#5fd4a8', Br: '#c97b4a', I: '#a06cd5', P: '#f09a4a',
+const PROTEIN_GREEN = '#21c521'
+const LIGAND_CARBON = '#22d3ee'
+const RESIDUE_COLOURS = ['#ff8c42', '#ffe74c', '#ff4fa3', '#f2f2f2', '#b084ff', '#4ad991']
+const ELEMENTS = { N: '#2f6fe0', O: '#e8402a', S: '#ffd23f', F: '#7ee787', Cl: '#7ee787', Br: '#c97b4a', P: '#ff8c42' }
+
+const POLAR = new Set(['N', 'O'])
+const HBOND_MAX = 3.6          // angstroms; generous, this is illustration not analysis
+
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z)
 }
 
 export default function Viewer3D({
@@ -54,63 +50,54 @@ export default function Viewer3D({
   const [spinning, setSpinning] = useState(true)
   const [problem, setProblem] = useState(null)
   const [ready, setReady] = useState(false)
+  const [contacts, setContacts] = useState([])
 
   useEffect(() => {
     let dead = false
-    setReady(false)
-    setProblem(null)
+    setReady(false); setProblem(null); setContacts([])
 
     loadLibrary()
       .then(($3Dmol) => {
         if (dead || !host.current) return
         host.current.innerHTML = ''
-        const v = $3Dmol.createViewer(host.current, {
-          backgroundColor: '#0b0f17',
-          antialias: true,
-        })
+        const v = $3Dmol.createViewer(host.current, { backgroundColor: '#3a3a3a', antialias: true })
         viewer.current = v
-        // a soft outline makes the surface read as a solid body rather than a flat blob
-        v.setViewStyle({ style: 'outline', color: '#000000', width: 0.03 })
 
         const finish = () => {
           if (dead) return
           if (!v.getModel()) {
-            setProblem('Could not fetch this structure. The viewer needs internet access to the PDB.')
+            setProblem('Could not fetch this structure — the viewer needs internet access to the PDB.')
             return
           }
           setReady(true)
-          paint(v, view, ligandCode)
+          setContacts(paint(v, view, ligandCode))
           if (spinning && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            v.spin('y', 0.35)
+            v.spin('y', 0.4)
           }
         }
 
-        if (pdbData) {
-          v.addModel(pdbData, 'pdb')
-          finish()
-        } else {
+        if (pdbData) { v.addModel(pdbData, 'pdb'); finish() } else {
           $3Dmol.download(`pdb:${pdbId}`, v, {}, finish)
-          setTimeout(() => { if (!dead && !ready && !viewer.current?.getModel()) finish() }, 11000)
+          setTimeout(() => { if (!dead && !viewer.current?.getModel()) finish() }, 11000)
         }
       })
       .catch((error) => !dead && setProblem(error.message))
 
     return () => {
       dead = true
-      try { viewer.current?.spin(false) } catch { /* gone already */ }
+      try { viewer.current?.spin(false) } catch { /* gone */ }
       viewer.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pdbId, pdbData, ligandCode])
 
   useEffect(() => {
-    if (ready && viewer.current) paint(viewer.current, view, ligandCode)
+    if (ready && viewer.current) setContacts(paint(viewer.current, view, ligandCode))
   }, [view, ready, ligandCode])
 
   useEffect(() => {
-    const v = viewer.current
-    if (!v || !ready) return
-    try { v.spin(spinning ? 'y' : false) } catch { /* ignore */ }
+    if (!viewer.current || !ready) return
+    try { viewer.current.spin(spinning ? 'y' : false) } catch { /* ignore */ }
   }, [spinning, ready])
 
   return (
@@ -131,47 +118,133 @@ export default function Viewer3D({
           </div>
         )}
       </div>
-      <div className="legend">
-        <span><i style={{ background: '#f5b942' }} /> Compound</span>
-        <span><i style={{ background: '#5e7a9e' }} /> Pocket</span>
-        <span><i style={{ background: '#2f3d52' }} /> Protein</span>
-        <span className="dim">Drag to rotate · scroll to zoom</span>
-      </div>
+
+      {contacts.length > 0 ? (
+        <div className="contacts">
+          {contacts.map((c, i) => (
+            <span key={c.key} className="contact">
+              <b style={{ background: RESIDUE_COLOURS[i % RESIDUE_COLOURS.length] }}>{i + 1}</b>
+              {c.label}
+              {c.hbonds > 0 && <em>{c.hbonds} H-bond{c.hbonds > 1 ? 's' : ''}</em>}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="legend">
+          <span><i style={{ background: LIGAND_CARBON }} /> Compound</span>
+          <span><i style={{ background: PROTEIN_GREEN }} /> Protein</span>
+          <span className="dim">Drag to rotate · scroll to zoom</span>
+        </div>
+      )}
     </div>
   )
 }
 
-/** Draw one of the three views. Separated out so switching view never rebuilds the model. */
+/** Draw one view. Returns the contact residues so they can be listed beside the picture. */
 function paint(v, view, ligandCode) {
   const $3Dmol = window.$3Dmol
-  const ligand = ligandCode
+  const ligandSel = ligandCode
     ? { resn: ligandCode }
-    : { hetflag: true, not: { resn: ['HOH', 'WAT', 'SO4', 'PO4', 'GOL', 'EDO', 'NA', 'CL', 'MG', 'ZN'] } }
+    : { hetflag: true, not: { resn: ['HOH', 'WAT', 'SO4', 'PO4', 'GOL', 'EDO', 'NA', 'CL', 'MG', 'ZN', 'CA', 'K'] } }
 
   v.removeAllSurfaces()
+  v.removeAllShapes()
+  v.removeAllLabels()
   v.setStyle({}, {})
 
   const ligandStyle = {
-    stick: { radius: 0.21, colorscheme: { prop: 'elem', map: LIGAND_COLOURS } },
-    sphere: { radius: 0.34, colorscheme: { prop: 'elem', map: LIGAND_COLOURS } },
+    stick: { radius: 0.2, colorscheme: { prop: 'elem', map: { C: LIGAND_CARBON, ...ELEMENTS } } },
   }
 
   if (view === 'ribbon') {
-    v.setStyle({}, { cartoon: { color: '#44557a', arrows: true, thickness: 0.9 } })
-  } else if (view === 'surface') {
-    v.setStyle({}, { cartoon: { color: '#2f3d52', opacity: 0.55 } })
-    v.addSurface($3Dmol.SurfaceType.MS,
-      { opacity: 0.88, color: '#36465f' }, { not: { hetflag: true } })
-  } else {
-    // pocket: ribbon for context, a solid surface only over the residues lining the site
-    v.setStyle({}, { cartoon: { color: '#263247', opacity: 0.75 } })
-    v.addSurface($3Dmol.SurfaceType.MS,
-      { opacity: 0.92, color: '#5e7a9e' },
-      { within: { distance: 7.0, sel: ligand }, not: { hetflag: true } })
+    v.setStyle({}, { cartoon: { color: PROTEIN_GREEN, arrows: true } })
+    v.setStyle(ligandSel, ligandStyle)
+    v.zoomTo(ligandSel); v.zoom(0.4); v.render()
+    return []
   }
 
-  v.setStyle(ligand, ligandStyle)
-  v.zoomTo(ligand)
-  v.zoom(view === 'ribbon' ? 0.42 : 0.62)
+  if (view === 'surface') {
+    v.setStyle({}, { cartoon: { color: PROTEIN_GREEN, opacity: 0.95 } })
+    v.addSurface($3Dmol.SurfaceType.MS, { opacity: 0.72, color: '#9ad6a0' }, { not: { hetflag: true } })
+    v.setStyle(ligandSel, ligandStyle)
+    v.zoomTo(ligandSel); v.zoom(0.6); v.render()
+    return []
+  }
+
+  // ---- pocket view: the presentation shot
+  v.setStyle({}, { cartoon: { color: PROTEIN_GREEN } })
+
+  const model = v.getModel()
+  const ligandAtoms = model ? model.selectedAtoms(ligandSel) : []
+  if (ligandAtoms.length === 0) {
+    v.setStyle(ligandSel, ligandStyle); v.zoomTo(); v.render()
+    return []
+  }
+
+  // residues lining the pocket
+  const near = model.selectedAtoms({ within: { distance: 4.6, sel: ligandSel }, not: { hetflag: true } })
+  const residues = new Map()
+  for (const atom of near) {
+    const key = `${atom.chain}_${atom.resi}`
+    if (!residues.has(key)) {
+      residues.set(key, { key, chain: atom.chain, resi: atom.resi, resn: atom.resn, atoms: [], hbonds: 0 })
+    }
+    residues.get(key).atoms.push(atom)
+  }
+
+  // hydrogen bonds: polar ligand atom close to polar protein atom
+  for (const entry of residues.values()) {
+    for (const protein of entry.atoms) {
+      if (!POLAR.has(protein.elem)) continue
+      for (const lig of ligandAtoms) {
+        if (!POLAR.has(lig.elem)) continue
+        if (distance(protein, lig) <= HBOND_MAX) {
+          entry.hbonds += 1
+          v.addCylinder({
+            start: { x: protein.x, y: protein.y, z: protein.z },
+            end: { x: lig.x, y: lig.y, z: lig.z },
+            radius: 0.055, dashed: true, fromCap: 1, toCap: 1, color: '#ffe74c',
+          })
+        }
+      }
+    }
+  }
+
+  // the closest residues get a colour, a stick representation and a number
+  const ranked = [...residues.values()]
+    .map((entry) => ({
+      ...entry,
+      closest: Math.min(...entry.atoms.flatMap((a) => ligandAtoms.map((l) => distance(a, l)))),
+    }))
+    .sort((a, b) => (b.hbonds - a.hbonds) || (a.closest - b.closest))
+    .slice(0, 6)
+
+  ranked.forEach((entry, i) => {
+    const colour = RESIDUE_COLOURS[i % RESIDUE_COLOURS.length]
+    v.setStyle({ chain: entry.chain, resi: entry.resi },
+      { stick: { radius: 0.15, colorscheme: { prop: 'elem', map: { C: colour, ...ELEMENTS } } },
+        cartoon: { color: PROTEIN_GREEN } })
+    const anchor = entry.atoms[Math.floor(entry.atoms.length / 2)]
+    v.addLabel(String(i + 1), {
+      position: { x: anchor.x, y: anchor.y, z: anchor.z },
+      backgroundColor: colour, backgroundOpacity: 0.92, fontColor: '#111111',
+      fontSize: 11, borderThickness: 0, inFront: true,
+    })
+  })
+
+  // wireframe mesh over the cavity — shows the pocket without hiding what sits in it
+  v.addSurface($3Dmol.SurfaceType.VDW,
+    { opacity: 0.85, color: '#7fe3a0', wireframe: true, linewidth: 0.4 },
+    { within: { distance: 7.5, sel: ligandSel }, not: { hetflag: true } })
+
+  v.setStyle(ligandSel, ligandStyle)
+  v.zoomTo(ligandSel)
+  v.zoom(0.52)
   v.render()
+
+  return ranked.map((entry) => ({
+    key: entry.key,
+    label: `${entry.resn}${entry.resi}`,
+    hbonds: entry.hbonds,
+  }))
 }

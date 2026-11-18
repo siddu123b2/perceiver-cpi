@@ -230,3 +230,19 @@ footer .wrap { display: flex; justify-content: space-between; gap: 1rem; flex-wr
 }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ------------------------------------------------------------------ pocket contacts */
+
+.contacts { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.7rem; }
+.contact {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.74rem; font-family: var(--mono); color: var(--text-2);
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: 100px; padding: 0.22rem 0.6rem 0.22rem 0.22rem;
+}
+.contact b {
+  width: 17px; height: 17px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  font-size: 0.66rem; font-weight: 700; color: #111; font-family: var(--sans);
+}
+.contact em { font-style: normal; color: var(--mid); font-size: 0.68rem; }
