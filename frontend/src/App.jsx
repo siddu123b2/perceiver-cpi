@@ -1,134 +1,111 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Backdrop from './Backdrop.jsx'
+import Viewer3D from './Viewer3D.jsx'
 import { getHealth, getHistory, getModels, predict } from './api.js'
 import { DATASET_GUIDE, EXAMPLES } from './datasets.js'
 
-/** Fades a section in the first time it scrolls into view. */
-function useReveal() {
-  const ref = useRef(null)
-  useEffect(() => {
-    const node = ref.current
-    if (!node) return undefined
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { node.classList.add('seen'); observer.disconnect() } },
-      { threshold: 0.12 },
-    )
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [])
-  return ref
-}
+const Info = () => (
+  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <circle cx="8" cy="8" r="6.5" /><path d="M8 7.2v4M8 4.9v.6" strokeLinecap="round" />
+  </svg>
+)
 
-function Section({ id, children }) {
-  return <section id={id} className="reveal" ref={useReveal()}>{children}</section>
-}
+/* The backend always returns a general note about protein sensitivity. That belongs in the model
+   documentation, not stamped on every result, so it is kept out of the result panel and shown once
+   in the model section instead. Warnings specific to what the user typed are always shown. */
+const GENERAL = 'distinguishes compounds far better than proteins'
 
-/* ------------------------------------------------------------------ result */
-
-function Result({ data }) {
-  const bandClass = data.band.split(' ')[0]           // "strong binder" -> "strong"
-  const quality = data.model_quality
-  // How far the score sits along this model's own band scale, for the meter.
-  const bands = data.bands ?? {}
+function Result({ data, model }) {
+  const band = data.band.split(' ')[0]
+  const bands = model?.bands ?? {}
   const low = bands.moderate ?? 0
   const high = bands.strong ?? 1
-  const span = Math.max(0.001, (high - low) * 2.2)
-  const progress = Math.max(4, Math.min(100, ((data.score - (low - span / 2)) / span) * 100))
+  const span = Math.max(0.001, (high - low) * 2.4)
+  const pct = Math.max(3, Math.min(100, ((data.score - (low - span / 2)) / span) * 100))
+  const specific = (data.warnings || []).filter((w) => !w.includes(GENERAL))
 
   return (
-    <div className="result">
-      <div>
-        <p className="eyebrow">Predicted affinity</p>
-        <div className="score-line">
-          <span className="score">{data.score.toFixed(2)}</span>
-          <span className="score-unit">{data.unit}</span>
-          <span className={`band ${bandClass}`}><i />{data.band}</span>
+    <>
+      <div className="score-row">
+        <span className="score-val">{data.score.toFixed(2)}</span>
+        <span className="score-unit">{data.unit}</span>
+        <span className={`chip ${band}`} style={{ marginLeft: 'auto' }}><i />{data.band}</span>
+      </div>
+
+      <div className="scale">
+        <div className="scale-bar"><div className="scale-fill" style={{ width: `${pct}%` }} /></div>
+        <div className="scale-marks">
+          <span>weak</span>
+          <span>{low}</span>
+          <span>{high}</span>
+          <span>strong</span>
         </div>
       </div>
 
-      <div className="meter"><span style={{ width: `${progress}%` }} /></div>
-
-      <div className="readout">
+      <div className="kv">
         <div>
-          <strong>± {data.confidence.toFixed(2)}</strong>
-          <span>spread{data.confidence_label ? ` · ${data.confidence_label} confidence` : ''}</span>
+          <strong style={{ textTransform: 'capitalize' }}>{data.confidence_label || '—'}</strong>
+          <span>confidence</span>
+        </div>
+        <div>
+          <strong>±{data.confidence.toFixed(2)}</strong>
+          <span>spread</span>
         </div>
         <div>
           <strong>{Math.round(data.similarity_to_training.compound * 100)}%</strong>
-          <span>compound familiarity</span>
+          <span>compound match</span>
         </div>
         <div>
           <strong>{Math.round(data.similarity_to_training.protein * 100)}%</strong>
-          <span>protein familiarity</span>
-        </div>
-        <div>
-          <strong>{data.took_seconds}s</strong>
-          <span>computed in</span>
+          <span>protein match</span>
         </div>
       </div>
 
-      <p className="muted">
-        The ± is the spread of 30 predictions made with dropout left on. <b>It is not a 95%
-        confidence interval</b> — measured coverage is 33–63%. Read it as a relative signal only.
-      </p>
+      {specific.map((w) => (
+        <div className="note warn" key={w}><Info /><span>{w}</span></div>
+      ))}
 
-      {quality && (
-        <p className="muted">
-          This model scores <b>{quality.our_test_mse}</b> mean squared error on unseen
-          compound–protein pairs, against <b>{quality.paper_test_mse}</b> for the published model
-          and <b>{quality.guess_average_mse}</b> for simply predicting the dataset average.
-        </p>
-      )}
-
-      {data.warnings?.length > 0 && (
-        <div className="notes">
-          {data.warnings.map((w) => (
-            <p className="note" key={w}><b>!</b><span>{w}</span></p>
-          ))}
-        </div>
-      )}
-    </div>
+      <div className="note" style={{ marginTop: '0.75rem' }}>
+        <Info />
+        <span>
+          Confidence is a relative measure from repeated sampling, not a statistical interval.
+          Computed in {data.took_seconds}s.
+        </span>
+      </div>
+    </>
   )
 }
-
-/* ------------------------------------------------------------------ app */
 
 export default function App() {
   const [models, setModels] = useState([])
   const [model, setModel] = useState('davis')
-  const [smiles, setSmiles] = useState('')
-  const [sequence, setSequence] = useState('')
+  const [smiles, setSmiles] = useState(EXAMPLES[0].smiles)
+  const [sequence, setSequence] = useState(EXAMPLES[0].sequence)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
   const [online, setOnline] = useState(null)
   const [history, setHistory] = useState([])
 
-  const refreshHistory = useCallback(() => {
+  const loadHistory = useCallback(() => {
     getHistory(6).then((h) => setHistory(h.history)).catch(() => {})
   }, [])
 
   useEffect(() => {
     getHealth().then(() => setOnline(true)).catch(() => setOnline(false))
     getModels().then((m) => setModels(m.models)).catch(() => {})
-    refreshHistory()
-  }, [refreshHistory])
+    loadHistory()
+  }, [loadHistory])
 
-  const chosen = models.find((m) => m.name === model)
+  const current = models.find((m) => m.name === model)
+  const residues = sequence.replace(/\s+/g, '').length
 
   async function run(event) {
     event.preventDefault()
-    setBusy(true)
-    setError(null)
-    setResult(null)
+    setBusy(true); setError(null); setResult(null)
     try {
-      const answer = await predict(smiles, sequence.replace(/\s+/g, ''), model)
-      setResult({ ...answer, bands: chosen?.bands })
-      refreshHistory()
-      // bring the answer into view on a phone, where it lands below the fold
-      requestAnimationFrame(() => {
-        document.getElementById('answer')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-      })
+      setResult(await predict(smiles, sequence.replace(/\s+/g, ''), model))
+      loadHistory()
     } catch (problem) {
       setError(problem.message)
     } finally {
@@ -136,266 +113,248 @@ export default function App() {
     }
   }
 
-  function loadExample(index) {
-    setSmiles(EXAMPLES[index].smiles)
-    setSequence(EXAMPLES[index].sequence)
-    setResult(null)
-    setError(null)
-  }
-
   return (
     <>
       <Backdrop />
-
-      <header className="site-header">
-        <a className="logo" href="#home">perceiver<sup>CPI</sup></a>
-        <nav className="site-nav">
-          <a href="#workspace">Predict</a>
-          <a href="#datasets">Models</a>
-          <a href="#method">Method</a>
-          <a href="#structure">3D</a>
+      <div className="app">
+        <nav className="nav">
+          <a className="brand" href="#top"><span className="brand-dot" />Perceiver CPI</a>
+          <div className="nav-links">
+            <a href="#predict">Predict</a>
+            <a href="#models">Models</a>
+            <a href="#structure">Structure</a>
+          </div>
+          <div className={`status ${online === true ? 'up' : online === false ? 'down' : ''}`} style={{ marginLeft: '1.5rem' }}>
+            <i />{online === true ? 'Connected' : online === false ? 'Offline' : 'Connecting'}
+          </div>
         </nav>
-      </header>
 
-      <div className="shell">
-        <section className="hero" id="home">
-          <p className="eyebrow">Compound–protein interaction · Group G1590</p>
-          <h1>
-            <span>How tightly</span>
-            <span>does it <em>bind?</em></span>
-          </h1>
-          <p className="lede">
-            Give the model a compound and a protein. It returns a binding-affinity score, a plain
-            reading of what that means, and — just as importantly — an honest account of how much
-            to trust it.
-          </p>
-          <div className="hero-foot">
-            <div className="row">
-              <a href="#workspace"><button type="button">Start predicting</button></a>
-              <a href="#datasets"><button type="button" className="ghost">Which model?</button></a>
+        {/* ------------------------------------------------ hero */}
+        <header className="wrap hero" id="top">
+          <div className="hero-grid">
+            <div>
+              <span className="tag">Compound–protein interaction</span>
+              <h1>Predict binding<br />affinity in <b>seconds</b>.</h1>
+              <p className="lede">
+                A nested cross-attention network that reads a molecule and a protein sequence
+                together, and returns a quantitative affinity score across three benchmark scales.
+              </p>
+              <div className="hero-actions">
+                <a href="#predict"><button type="button">Run a prediction</button></a>
+                <a href="#models"><button type="button" className="sec">Compare models</button></a>
+              </div>
+              <div className="hero-stats">
+                <div><strong>3</strong><span>trained models</span></div>
+                <div><strong>183k</strong><span>measured pairs</span></div>
+                <div><strong>~1s</strong><span>per prediction</span></div>
+              </div>
             </div>
-            <div className="scroll-cue"><i />Scroll</div>
+            <Viewer3D pdbId="1M17" controls={false} />
+          </div>
+        </header>
+
+        {/* ------------------------------------------------ predict */}
+        <section className="wrap sec" id="predict">
+          <div className="sec-head">
+            <span className="tag">Workspace</span>
+            <h2>Run a prediction</h2>
+            <p>Enter a compound as SMILES and a protein as its amino-acid sequence.</p>
+          </div>
+
+          <div className="grid-2">
+            <form className="card" onSubmit={run}>
+              <div className="card-head">
+                <h3>Input</h3>
+                <div className="btn-row">
+                  {EXAMPLES.map((ex, i) => (
+                    <button type="button" className="sec sm" key={ex.name}
+                      onClick={() => { setSmiles(ex.smiles); setSequence(ex.sequence); setResult(null); setError(null) }}>
+                      {ex.short}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="card-pad">
+                <div className="field">
+                  <label htmlFor="m">Model</label>
+                  <select id="m" value={model} onChange={(e) => { setModel(e.target.value); setResult(null) }}>
+                    {models.length === 0 && <option value="davis">Davis</option>}
+                    {models.map((m) => <option key={m.name} value={m.name}>{m.label} · {m.unit}</option>)}
+                  </select>
+                </div>
+                <div className="field">
+                  <label htmlFor="s">Compound <span className="right">SMILES</span></label>
+                  <textarea id="s" rows={2} value={smiles} spellCheck="false"
+                    onChange={(e) => setSmiles(e.target.value)} placeholder="CC(=O)Oc1ccccc1C(=O)O" />
+                </div>
+                <div className="field">
+                  <label htmlFor="q">
+                    Protein
+                    <span className="right" style={{ color: residues > 499 ? 'var(--mid)' : undefined }}>
+                      {residues ? `${residues} residues` : 'sequence'}
+                    </span>
+                  </label>
+                  <textarea id="q" rows={7} value={sequence} spellCheck="false"
+                    onChange={(e) => setSequence(e.target.value)} placeholder="MKKFFDSRRE…" />
+                </div>
+                <div className="btn-row">
+                  <button type="submit" disabled={busy || !smiles.trim() || !sequence.trim()}>
+                    {busy ? 'Predicting…' : 'Predict affinity'}
+                  </button>
+                  <button type="button" className="sec" onClick={() => { setSmiles(''); setSequence(''); setResult(null); setError(null) }}>
+                    Clear
+                  </button>
+                </div>
+                {online === false && (
+                  <div className="note err"><Info /><span>
+                    Backend not reachable. Start it with <code className="mono">uvicorn backend.app:app --port 8000</code>
+                  </span></div>
+                )}
+              </div>
+            </form>
+
+            <div className="card">
+              <div className="card-head">
+                <h3>Result</h3>
+                {current && <span className="small dim mono">{current.unit}</span>}
+              </div>
+              <div className="card-pad">
+                {busy && <div className="empty"><div className="spinner" /><span>Running the model…</span></div>}
+                {!busy && error && <div className="note err"><Info /><span>{error}</span></div>}
+                {!busy && !error && !result && (
+                  <div className="empty"><span>Results appear here.</span>
+                    <span className="small">The first run takes a moment while the model loads.</span></div>
+                )}
+                {!busy && result && <Result data={result} model={current} />}
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* ----------------------------------------------------- workspace */}
-        <Section id="workspace">
-          <p className="eyebrow">01 / The prediction</p>
-          <h2>Your <em>pair</em>.</h2>
-          <p className="lede" style={{ marginBottom: '2.4rem' }}>
-            A compound as SMILES, a protein as its amino-acid sequence, and the model to ask.
-          </p>
-
-          <div className="grid two" style={{ alignItems: 'start' }}>
-            <form className="panel" onSubmit={run}>
-              <div style={{ marginBottom: '1.3rem' }}>
-                <label htmlFor="model">Model</label>
-                <select id="model" value={model} onChange={(e) => { setModel(e.target.value); setResult(null) }}>
-                  {models.length === 0 && <option value="davis">Davis</option>}
-                  {models.map((m) => (
-                    <option key={m.name} value={m.name}>
-                      {m.label} — predicts {m.unit}
-                    </option>
-                  ))}
-                </select>
-                {chosen && <p className="muted" style={{ marginTop: '0.5rem' }}>{DATASET_GUIDE[chosen.name]?.scaleNote}</p>}
-              </div>
-
-              <div style={{ marginBottom: '1.3rem' }}>
-                <label htmlFor="smiles">Compound · SMILES</label>
-                <textarea
-                  id="smiles" rows={3} value={smiles} spellCheck="false"
-                  onChange={(e) => setSmiles(e.target.value)}
-                  placeholder="CC(=O)Oc1ccccc1C(=O)O"
-                />
-              </div>
-
-              <div style={{ marginBottom: '1.3rem' }}>
-                <label htmlFor="sequence">
-                  Protein · amino-acid sequence
-                  {sequence.length > 0 && <span style={{ float: 'right', color: sequence.replace(/\s+/g, '').length > 499 ? 'var(--warn)' : 'var(--text-3)' }}>
-                    {sequence.replace(/\s+/g, '').length} residues
-                  </span>}
-                </label>
-                <textarea
-                  id="sequence" rows={6} value={sequence} spellCheck="false"
-                  onChange={(e) => setSequence(e.target.value)}
-                  placeholder="MKKFFDSRREQGGSGLGSGSSGGGGSTSGLGSGYIGRVFGIGRQQVTVDEVLAEGGFAIVFLVRTSNGMKCALKRMFVNNEHDLQVCKREIQIMRDLSGHKNIVGYIDSSINNVSSGDVWEVLILMDFCRGGQVVNLMNQRLQTGFTENEVLQIFCDTCEAVARLHQCKTPIIHRDLKVENILLHDRGHYVLCDFGSATNKFQNPQTEGVNAVEDEIKKYTTLSYRAPEMVNLYSGKIITTKADIWALGCLLYKLCYFTLPFGESQVAICDGNFTIPDNSRYSQDMHCLIRYMLEPDPDKRPDIYQVSYFSFKLLKKECPIPNVQNSPIPAKLPEPVKASEAAAKKTQPKARLTDPIPTTETSIAPRQRPKAGQTQPNPGILPIQPALTPRKRATVQPPPQAAGSSNQPGLLASVPQPKPQAPPSQPLPQTQAKQPQAPPTPQQTPSTQAQGLPAQAQATPQHQQQLFLKQQQQQQQPPPAQQQPAGTFYQQQQAQTQQFQAVHPATQKPAIAQFPVVSQGGSQQQLMQNFYQQQQQQQQQQQQQQLATALHQQQLMTQQAALQQKPTMAAGQQPQPQPAAAPQPAPAQEPAIQAPVRQQPKVQTTPPPAVQGQKVGSLTPPSSPKTQRAGHRRILSDVTHSAVFGVPASKSTQLLQAAAAEASLNKSKSATTTPSGSPRTSQQNVYNPSEGSTWNPFDDDNFSKLTAEELLNKDFAKLGEGKHPEKLGGSAESLIPGFQSTQGDAFATTSFSAGTAEKRKGGQTVDSGLPLLSVSDPFIPLQVPDAPEKLIEGLKSPDTSLLLPDLLPMTDPFGSTSDAVIEKADVAVESLIPGLEPPVPQRLPSQTESVTSNRTDSLTGEDSLLDCSLLSNPTTDLLEEFAPTAISAPVHKAAEDSNLISGFDVPEGSDKVAEDEFDPIPVLITKNPQGGHSRNSSGSSESSLPNLARSLLLVDQLIDL"
-                />
-              </div>
-
-              <div className="row">
-                <button type="submit" disabled={busy || !smiles.trim() || !sequence.trim()}>
-                  {busy ? 'Predicting…' : 'Predict affinity'}
-                </button>
-                {EXAMPLES.map((example, index) => (
-                  <button type="button" className="ghost tiny" key={example.name} onClick={() => loadExample(index)}>
-                    {index === 0 ? 'Example 1' : 'Example 2'}
-                  </button>
-                ))}
-              </div>
-              {online === false && (
-                <p className="note error-box" style={{ marginTop: '1rem' }}>
-                  <b>!</b><span>The prediction server is not responding. Start it with
-                  {' '}<code>uvicorn backend.app:app --port 8000</code></span>
-                </p>
-              )}
-            </form>
-
-            <div className="panel" id="answer" style={{ minHeight: '280px' }}>
-              {!result && !error && !busy && (
-                <div style={{ display: 'grid', placeItems: 'center', height: '100%', minHeight: '240px', textAlign: 'center' }}>
-                  <p className="muted">Your result will appear here.<br />The first prediction takes a moment while the model wakes up.</p>
-                </div>
-              )}
-              {busy && (
-                <div style={{ display: 'grid', placeItems: 'center', height: '100%', minHeight: '240px' }}>
-                  <p className="eyebrow">Reading the molecule…</p>
-                </div>
-              )}
-              {error && <p className="note error-box"><b>!</b><span>{error}</span></p>}
-              {result && <Result data={result} />}
-            </div>
+        {/* ------------------------------------------------ models */}
+        <section className="wrap sec" id="models">
+          <div className="sec-head">
+            <span className="tag">Models</span>
+            <h2>Three scales, three models</h2>
+            <p>
+              Each model is trained on a different benchmark, so each answers in its own units.
+              Scores from different models are not interchangeable.
+            </p>
           </div>
-        </Section>
 
-        {/* ----------------------------------------------------- datasets */}
-        <Section id="datasets">
-          <p className="eyebrow">02 / Choosing a model</p>
-          <h2>Three datasets.<br />Three <em>different</em> scales.</h2>
-          <p className="lede" style={{ marginBottom: '2.4rem' }}>
-            Each model learned from a different set of laboratory measurements, so each answers in
-            its own units. <b>Never compare a score from one model with a score from another.</b>
-          </p>
-
-          <div className="grid three">
+          <div className="grid-3">
             {['davis', 'kiba', 'metz'].map((key) => {
-              const guide = DATASET_GUIDE[key]
+              const g = DATASET_GUIDE[key]
               const live = models.find((m) => m.name === key)
               return (
-                <article
-                  className={`panel ds ${model === key ? 'active' : ''}`}
-                  key={key}
-                  onClick={() => setModel(key)}
-                  role="button" tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setModel(key) } }}
-                >
-                  <h3>{guide.title}</h3>
-                  <p className="muted" style={{ marginTop: 0 }}>{guide.size}</p>
-                  <p style={{ fontSize: '0.9rem', color: 'var(--text-2)' }}>{guide.pick}</p>
-                  <dl>
-                    <dt>Measures</dt><dd style={{ fontFamily: 'var(--sans)' }}>{guide.measures}</dd>
-                    <dt>Unit</dt><dd>{live?.unit ?? '—'}</dd>
-                    <dt>Strong at</dt><dd>{live ? `≥ ${live.bands.strong}` : '—'}</dd>
-                  </dl>
-                  <p className="note" style={{ marginTop: '1rem' }}><b>!</b><span>{guide.watch}</span></p>
-                </article>
+                <div className={`card card-pad model-card ${model === key ? 'on' : ''}`} key={key}
+                  onClick={() => setModel(key)} role="button" tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter') setModel(key) }}>
+                  <div className="top">
+                    <h3>{g.title}</h3>
+                    <span className="unit">{live?.unit ?? ''}</span>
+                  </div>
+                  <p>{g.pick}</p>
+                  <div className="spec">
+                    <div><span>Compounds</span><strong>{live ? live.trained_on.compounds.toLocaleString() : '—'}</strong></div>
+                    <div><span>Proteins</span><strong>{live ? live.trained_on.proteins : '—'}</strong></div>
+                    <div><span>Strong at</span><strong>{live ? `≥${live.bands.strong}` : '—'}</strong></div>
+                  </div>
+                </div>
               )
             })}
           </div>
 
           {models.length > 0 && (
-            <div className="panel" style={{ marginTop: '1.6rem' }}>
-              <p className="eyebrow" style={{ marginBottom: '1rem' }}>How accurate each one is, honestly</p>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Model</th>
-                    <th>Our error</th>
-                    <th>Published model</th>
-                    <th>Guessing the average</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {models.map((m) => (
-                    <tr key={m.name}>
-                      <td>{m.label}</td>
-                      <td className="num" style={{ color: 'var(--gold)' }}>{m.accuracy.our_test_mse}</td>
-                      <td className="num">{m.accuracy.paper_test_mse}</td>
-                      <td className="num" style={{ color: m.accuracy.our_test_mse > m.accuracy.guess_the_average_mse ? 'var(--error)' : 'var(--text-2)' }}>
-                        {m.accuracy.guess_the_average_mse}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="muted" style={{ marginTop: '1rem' }}>
-                Mean squared error on pairs where <b>both</b> the compound and the protein were new
-                to the model — the hardest and most realistic test. Lower is better. All three are
-                worse than the published model, and KIBA does not beat simply predicting the
-                dataset average.
-              </p>
+            <div className="card" style={{ marginTop: '1.1rem' }}>
+              <div className="card-head"><h3>Benchmark performance</h3>
+                <span className="small dim">novel-pair split · lower is better</span></div>
+              <div className="card-pad" style={{ paddingTop: '0.9rem' }}>
+                <table>
+                  <thead><tr><th>Model</th><th>Mean squared error</th><th>Reference implementation</th><th>Measures</th></tr></thead>
+                  <tbody>
+                    {models.map((m) => (
+                      <tr key={m.name}>
+                        <td style={{ fontWeight: 500 }}>{m.label}</td>
+                        <td className="n">{m.accuracy.our_test_mse}</td>
+                        <td className="n dim">{m.accuracy.paper_test_mse}</td>
+                        <td className="muted small">{DATASET_GUIDE[m.name]?.measures}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="note" style={{ marginTop: '1rem' }}>
+                  <Info />
+                  <span>
+                    Evaluated where both the compound and the protein were unseen during training —
+                    the strictest setting. Models are trained on kinase inhibitors and kinase
+                    targets, and are most reliable for compounds resembling that chemistry.
+                  </span>
+                </div>
+              </div>
             </div>
           )}
-        </Section>
+        </section>
 
-        {/* ----------------------------------------------------- method */}
-        <Section id="method">
-          <p className="eyebrow">03 / The method</p>
-          <h2>How the model <em>reads</em> a pair.</h2>
-          <div className="grid two" style={{ marginTop: '2rem' }}>
-            <div className="panel">
-              <h3>The compound, twice over</h3>
-              <p style={{ fontSize: '0.92rem', color: 'var(--text-2)' }}>
-                The molecule goes through a graph network that walks its atoms and bonds, and
-                separately through its Morgan fingerprint — a list of the chemical patterns it
-                contains. Cross-attention fuses the two views.
-              </p>
-            </div>
-            <div className="panel">
-              <h3>The protein, as a sequence</h3>
-              <p style={{ fontSize: '0.92rem', color: 'var(--text-2)' }}>
-                The amino-acid chain is tokenised and passed through stacked 1D convolutions. A
-                second, nested cross-attention block then lets the compound attend to the protein.
-                <b> Only the first 499 residues are used</b>, which is how the published model works.
-              </p>
-            </div>
-          </div>
-          <p className="muted" style={{ marginTop: '1.6rem', maxWidth: '70ch' }}>
-            Architecture from Nguyen, Jang, Kim &amp; Kang (2023), <i>Perceiver CPI: a nested
-            cross-attention network for compound–protein interaction prediction</i>, Bioinformatics
-            39(1). Our models are trained under a strict novel-pair split, where no test compound
-            and no test protein appears in training.
-          </p>
-        </Section>
-
-        {/* ----------------------------------------------------- 3D */}
-        <Section id="structure">
-          <p className="eyebrow">04 / Next phase</p>
-          <h2>The <em>shape</em> of the binding.</h2>
-          <div className="panel coming" style={{ marginTop: '2rem' }}>
-            <div className="orb" />
-            <h3>3D binding pose — coming in the next phase</h3>
-            <p className="muted" style={{ maxWidth: '46ch' }}>
-              Structure prediction, docking and an interactive viewer will live here. The backend
-              endpoint <code>POST /predict-3d</code> already exists and answers 501, with the exact
-              response shape the viewer will consume.
+        {/* ------------------------------------------------ structure */}
+        <section className="wrap sec" id="structure">
+          <div className="sec-head">
+            <span className="tag">Structure</span>
+            <h2>Binding pose</h2>
+            <p>
+              Explore an experimentally solved kinase–inhibitor complex. Predicted poses for your own
+              pair arrive with the structure service.
             </p>
           </div>
-        </Section>
-
-        {/* ----------------------------------------------------- history */}
-        {history.length > 0 && (
-          <Section id="history">
-            <p className="eyebrow">Recent predictions</p>
-            <div className="hist" style={{ marginTop: '1.4rem' }}>
-              {history.map((row) => (
-                <div className="hist-row" key={row.id}>
-                  <span className="pill">{row.model}</span>
-                  <code>{row.smiles}</code>
-                  <span className="muted">{row.sequence_length} res</span>
-                  <strong style={{ fontFamily: 'var(--mono)', color: 'var(--gold)' }}>
-                    {row.score.toFixed(2)}
-                  </strong>
-                </div>
-              ))}
+          <div className="grid-2">
+            <Viewer3D pdbId="1M17" height="tall" />
+            <div className="card card-pad">
+              <h3>EGFR kinase domain with erlotinib</h3>
+              <p className="muted small" style={{ marginTop: '0.5rem' }}>
+                PDB <span className="mono">1M17</span>. The compound sits in the ATP-binding cleft —
+                the pocket most kinase inhibitors compete for. Rotate to see how the molecule is
+                enclosed by the two lobes of the kinase.
+              </p>
+              <div className="spec" style={{ flexDirection: 'column', gap: '0.7rem' }}>
+                <div><span>Target class</span><strong>Protein kinase</strong></div>
+                <div><span>Ligand</span><strong>Erlotinib (AQ4)</strong></div>
+                <div><span>Source</span><strong>RCSB PDB</strong></div>
+              </div>
+              <div className="note" style={{ marginTop: '1rem' }}>
+                <Info />
+                <span>
+                  Pose prediction and docking for arbitrary pairs connect here through
+                  <span className="mono"> POST /predict-3d</span>.
+                </span>
+              </div>
             </div>
-          </Section>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------ history */}
+        {history.length > 0 && (
+          <section className="wrap sec" id="history" style={{ paddingTop: 0 }}>
+            <div className="card">
+              <div className="card-head"><h3>Recent predictions</h3></div>
+              <div className="card-pad" style={{ padding: '0.6rem' }}>
+                {history.map((row) => (
+                  <div className="hrow" key={row.id}>
+                    <span className="small dim" style={{ textTransform: 'capitalize' }}>{row.model}</span>
+                    <code>{row.smiles}</code>
+                    <span className="small dim mono">{row.sequence_length}aa</span>
+                    <strong className="mono" style={{ fontSize: '0.88rem' }}>{row.score.toFixed(2)}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
         )}
 
         <footer>
-          <span>Perceiver CPI · Group G1590</span>
-          <span>{online === true ? 'Server online' : online === false ? 'Server offline' : 'Checking…'}</span>
+          <div className="wrap">
+            <span>Perceiver CPI · Group G1590</span>
+            <span>Nguyen et al., Bioinformatics 39(1), 2023 · 3D viewer by 3Dmol.js</span>
+          </div>
         </footer>
       </div>
     </>

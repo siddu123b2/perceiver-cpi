@@ -48,10 +48,10 @@ def find_runs():
     return found
 
 
-def measure(predictions_path, dataset, part='test'):
+def measure(predictions_path, dataset, part='test', fold=0):
     """Protein sensitivity on one split. part='novelval' judges an experiment without opening the
     test set, which is what Phase 5 chooses on."""
-    test = pd.read_csv(ROOT / 'data' / 'splits' / dataset / 'novel_pair' / f'fold0_{part}.csv')
+    test = pd.read_csv(ROOT / 'data' / 'splits' / dataset / 'novel_pair' / f'fold{fold}_{part}.csv')
     predicted = pd.read_csv(predictions_path)
     if len(predicted) != len(test):
         raise SystemExit(f'{predictions_path}: {len(predicted)} predictions for {len(test)} '

@@ -10,7 +10,7 @@ export const DATASET_GUIDE = {
     measures: 'Kd — the concentration at which half the protein is bound',
     scaleNote: 'pKd. 7 means 100 nM, 8 means 10 nM. Each whole number is a 10× stronger bind.',
     size: '68 compounds × 379 kinases',
-    pick: 'Pick this for a kinase inhibitor against a kinase target. It is the most studied of the three and the one our own work is best characterised on.',
+    pick: 'The most established kinase benchmark. Best choice for a kinase inhibitor against a kinase target.',
     watch: 'About 70% of its labels sit at exactly 5.0, which is the dataset\'s way of recording "no binding detected". The model therefore sees far more non-binders than binders.',
   },
   kiba: {
@@ -18,7 +18,7 @@ export const DATASET_GUIDE = {
     measures: 'A composite score blending Kd, Ki and IC50 measurements',
     scaleNote: 'KIBA score. Higher is stronger. 12.1 is the threshold used in the literature to call something a binder.',
     size: '2,068 compounds × 229 kinases',
-    pick: 'Pick this when your compound is unusual — it has by far the widest range of compounds, so a new molecule is more likely to resemble something it has seen.',
+    pick: 'The widest chemical coverage of the three. Best when your compound is unusual or far from typical inhibitor chemistry.',
     watch: 'This is our weakest model: on new compound–protein pairs it does not beat simply predicting the dataset average. Treat its numbers as a rough signal only.',
   },
   metz: {
@@ -26,7 +26,7 @@ export const DATASET_GUIDE = {
     measures: 'Ki — how tightly the compound binds, from inhibition assays',
     scaleNote: 'pKi. Same shape as pKd: 7 means 100 nM, and each whole number is 10× stronger.',
     size: '1,423 compounds × 170 kinases',
-    pick: 'Pick this when you want a model whose training labels were spread evenly rather than piled up at "no binding". Its predictions vary the most of the three.',
+    pick: 'Trained on evenly spread inhibition constants, so its predictions vary most across targets.',
     watch: 'Smallest protein set of the three, so an unusual target is more likely to fall outside what it has seen.',
   },
 }
@@ -36,6 +36,7 @@ export const DATASET_GUIDE = {
 export const EXAMPLES = [
   {
     name: 'Vemurafenib + a kinase domain',
+    short: 'Example A',
     smiles: 'CCCS(=O)(=O)Nc1ccc(F)c(C(=O)c2c[nH]c3ncc(Cl)cc23)c1F',
     sequence:
       'LKMNKLPSNRGNTLREVQLMNRLRHPNILRFMGVCVHQGQLHALTEYMNGGTLEXLLSSPEPLSWPVRLHLALDIARGLRYLHSKG' +
@@ -44,6 +45,7 @@ export const EXAMPLES = [
   },
   {
     name: 'Erlotinib + EGFR-family kinase',
+    short: 'Example B',
     smiles: 'C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1',
     sequence:
       'MGCIKSKENKSPAIKYRPENTPEPVSTSVSHYGAEPTTVSPCPSSSAKGTAVNFSSLSMTPFGGSSGVTPFGGASSSFSVVPSSYP' +

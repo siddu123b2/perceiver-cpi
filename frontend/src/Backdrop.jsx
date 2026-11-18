@@ -1,194 +1,148 @@
 import { useEffect, useRef } from 'react'
 
 /**
- * The moving background: a DNA double helix that turns as you scroll, with a drifting field of
- * bonded molecule nodes behind it.
+ * Background: a slowly rotating molecular skeleton — rings and branches, the shape of a small
+ * drug molecule — projected from 3D to 2D by hand.
  *
- * Written from scratch on a single canvas rather than with a 3D library, because this needs to stay
- * smooth on an integrated GPU while the page is also running a prediction. Everything is 2D maths.
- *
- * Scrolling does two things: it advances the helix (so the strands appear to travel past the
- * viewer) and it shifts the molecule field slightly, which gives a sense of depth without a real
- * camera. Both are eased, so a flick of the wheel does not snap the animation.
+ * Deliberately quiet. It sits at 50% opacity behind the interface and turns slowly; scrolling
+ * nudges the rotation rather than driving it, so the page never feels like it is sliding around.
+ * Plain canvas maths, no 3D library, so it costs almost nothing while a prediction is running.
  */
+
+// A fused two-ring scaffold with a few substituents: roughly the shape of a kinase inhibitor.
+// [x, y, z] in arbitrary units, then the bonds between them.
+function buildMolecule() {
+  const atoms = []
+  const bonds = []
+
+  const ring = (cx, cy, cz, radius, tilt, start) => {
+    const first = atoms.length
+    for (let i = 0; i < 6; i += 1) {
+      const a = start + (i / 6) * Math.PI * 2
+      atoms.push([
+        cx + Math.cos(a) * radius,
+        cy + Math.sin(a) * radius * Math.cos(tilt),
+        cz + Math.sin(a) * radius * Math.sin(tilt),
+      ])
+      bonds.push([first + i, first + ((i + 1) % 6)])
+    }
+    return first
+  }
+
+  const a = ring(-0.55, 0, 0, 0.5, 0.25, 0)
+  const b = ring(0.42, 0.12, 0.1, 0.5, -0.3, 0.4)
+  bonds.push([a + 1, b + 4])                       // link the two rings
+
+  // substituents hanging off the rings
+  const branch = (from, dx, dy, dz, steps) => {
+    let previous = from
+    for (let i = 1; i <= steps; i += 1) {
+      atoms.push([atoms[from][0] + dx * i, atoms[from][1] + dy * i, atoms[from][2] + dz * i])
+      bonds.push([previous, atoms.length - 1])
+      previous = atoms.length - 1
+    }
+  }
+  branch(a + 3, -0.42, -0.3, 0.12, 2)
+  branch(b + 1, 0.38, 0.36, -0.16, 2)
+  branch(b + 2, 0.3, -0.42, 0.2, 1)
+  branch(a + 5, -0.16, 0.44, -0.24, 1)
+
+  return { atoms, bonds }
+}
+
 export default function Backdrop() {
   const ref = useRef(null)
 
   useEffect(() => {
     const canvas = ref.current
-    const ctx = canvas.getContext('2d', { alpha: true })
+    const ctx = canvas.getContext('2d')
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const { atoms, bonds } = buildMolecule()
 
     let width = 0
     let height = 0
-    let molecules = []
+    let scale = 1
 
     function resize() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       width = canvas.clientWidth
       height = canvas.clientHeight
-      canvas.width = Math.floor(width * dpr)
-      canvas.height = Math.floor(height * dpr)
+      canvas.width = Math.round(width * dpr)
+      canvas.height = Math.round(height * dpr)
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      buildMolecules()
+      scale = Math.min(width, height) * 0.3
     }
 
-    // A loose cloud of nodes with a few bonds each - reads as "molecule" without being any real one.
-    function buildMolecules() {
-      const count = Math.round(Math.min(58, Math.max(22, (width * height) / 26000)))
-      molecules = Array.from({ length: count }, () => ({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        z: 0.35 + Math.random() * 0.65,          // depth: drives size, speed and opacity
-        vx: (Math.random() - 0.5) * 0.11,
-        vy: (Math.random() - 0.5) * 0.11,
-        r: 0.9 + Math.random() * 2.1,
-      }))
-    }
-
-    // Scroll progress, eased so the motion never snaps.
-    let targetScroll = 0
-    let scroll = 0
+    let scrollNudge = 0
+    let target = 0
     function onScroll() {
       const max = Math.max(1, document.body.scrollHeight - window.innerHeight)
-      targetScroll = window.scrollY / max
+      target = (window.scrollY / max) * Math.PI * 1.1   // a little over half a turn, top to bottom
     }
 
-    const HELIX_TURNS = 3.1
-    const STRAND_GAP = Math.PI                    // the two strands sit half a turn apart
+    function project(point, yaw, pitch) {
+      const [x, y, z] = point
+      // rotate about Y, then X
+      const x1 = x * Math.cos(yaw) + z * Math.sin(yaw)
+      const z1 = -x * Math.sin(yaw) + z * Math.cos(yaw)
+      const y1 = y * Math.cos(pitch) - z1 * Math.sin(pitch)
+      const z2 = y * Math.sin(pitch) + z1 * Math.cos(pitch)
+      const depth = 1 / (2.6 - z2 * 0.42)              // weak perspective
+      return { x: x1 * depth * scale, y: y1 * depth * scale, d: (z2 + 1.4) / 2.8 }
+    }
 
-    function drawHelix(time) {
-      // The helix runs down the right on wide screens and straight down the middle on narrow ones.
-      const axis = width > 900 ? width * 0.78 : width * 0.5
-      const amplitude = Math.min(width * 0.1, 128)
-      const steps = 150
-      const phase = time * 0.00016 + scroll * HELIX_TURNS * Math.PI * 2
-      const points = [[], []]
+    function frame(time) {
+      const spin = reduced ? 0.6 : time * 0.000085
+      scrollNudge += (target - scrollNudge) * 0.05
+      const yaw = spin + scrollNudge
+      const pitch = 0.42 + Math.sin(spin * 0.7) * 0.12
 
-      for (let strand = 0; strand < 2; strand += 1) {
-        for (let i = 0; i <= steps; i += 1) {
-          const t = i / steps
-          const angle = t * HELIX_TURNS * Math.PI * 2 - phase + strand * STRAND_GAP
-          points[strand].push({
-            x: axis + Math.sin(angle) * amplitude,
-            y: t * height,
-            // depth from the cosine: a strand at the back is dimmer and thinner
-            depth: (Math.cos(angle) + 1) / 2,
-          })
-        }
-      }
+      ctx.clearRect(0, 0, width, height)
+      // off to the right on wide screens so it never fights the text
+      const cx = width > 1000 ? width * 0.76 : width * 0.5
+      const cy = height * 0.46
+      ctx.save()
+      ctx.translate(cx, cy)
 
-      // rungs between the strands, drawn first so they sit behind
-      for (let i = 0; i <= steps; i += 5) {
-        const a = points[0][i]
-        const b = points[1][i]
-        const depth = (a.depth + b.depth) / 2
-        ctx.strokeStyle = `rgba(139, 123, 240, ${0.05 + depth * 0.17})`
-        ctx.lineWidth = 0.6 + depth * 0.9
+      const points = atoms.map((p) => project(p, yaw, pitch))
+
+      for (const [i, j] of bonds) {
+        const p = points[i]
+        const q = points[j]
+        const d = (p.d + q.d) / 2
+        ctx.strokeStyle = `rgba(110, 150, 220, ${0.05 + d * 0.16})`
+        ctx.lineWidth = 0.6 + d * 1.5
         ctx.beginPath()
-        ctx.moveTo(a.x, a.y)
-        ctx.lineTo(b.x, b.y)
+        ctx.moveTo(p.x, p.y)
+        ctx.lineTo(q.x, q.y)
         ctx.stroke()
       }
 
-      // the two sugar-phosphate backbones, segment by segment so depth can vary along them
-      for (let strand = 0; strand < 2; strand += 1) {
-        const colour = strand === 0 ? '233, 195, 123' : '79, 209, 197'
-        for (let i = 0; i < steps; i += 1) {
-          const a = points[strand][i]
-          const b = points[strand][i + 1]
-          ctx.strokeStyle = `rgba(${colour}, ${0.05 + a.depth * 0.3})`
-          ctx.lineWidth = 0.7 + a.depth * 1.9
-          ctx.beginPath()
-          ctx.moveTo(a.x, a.y)
-          ctx.lineTo(b.x, b.y)
-          ctx.stroke()
-        }
-        // bases, only on the near side so the helix reads as 3D
-        for (let i = 0; i <= steps; i += 5) {
-          const p = points[strand][i]
-          if (p.depth < 0.55) continue
-          ctx.fillStyle = `rgba(${colour}, ${(p.depth - 0.55) * 0.5})`
-          ctx.beginPath()
-          ctx.arc(p.x, p.y, 1 + p.depth * 1.7, 0, Math.PI * 2)
-          ctx.fill()
-        }
-      }
-    }
-
-    function drawMolecules() {
-      const drift = scroll * 90
-      for (let i = 0; i < molecules.length; i += 1) {
-        const m = molecules[i]
-        for (let j = i + 1; j < molecules.length; j += 1) {
-          const n = molecules[j]
-          const dx = m.x - n.x
-          const dy = (m.y - n.y)
-          const d2 = dx * dx + dy * dy
-          if (d2 > 20000) continue
-          const strength = (1 - Math.sqrt(d2) / 141) * 0.16 * Math.min(m.z, n.z)
-          ctx.strokeStyle = `rgba(150, 170, 255, ${strength})`
-          ctx.lineWidth = 0.5
-          ctx.beginPath()
-          ctx.moveTo(m.x, m.y - drift * m.z)
-          ctx.lineTo(n.x, n.y - drift * n.z)
-          ctx.stroke()
-        }
-      }
-      for (const m of molecules) {
-        const y = m.y - drift * m.z
-        ctx.fillStyle = `rgba(190, 205, 255, ${0.1 + m.z * 0.3})`
+      for (const p of points) {
+        ctx.fillStyle = `rgba(140, 190, 240, ${0.07 + p.d * 0.2})`
         ctx.beginPath()
-        ctx.arc(m.x, y, m.r * m.z, 0, Math.PI * 2)
+        ctx.arc(p.x, p.y, 1.1 + p.d * 2.6, 0, Math.PI * 2)
         ctx.fill()
       }
+
+      ctx.restore()
+      if (!reduced) handle = requestAnimationFrame(frame)
     }
 
-    function step(time) {
-      scroll += (targetScroll - scroll) * 0.055        // ease toward the real scroll position
-      ctx.clearRect(0, 0, width, height)
-
-      for (const m of molecules) {
-        m.x += m.vx * m.z
-        m.y += m.vy * m.z
-        // wrap, with a margin so nodes never pop in at the edge
-        if (m.x < -60) m.x = width + 60
-        if (m.x > width + 60) m.x = -60
-        if (m.y < -60) m.y = height + 60
-        if (m.y > height + 60) m.y = -60
-      }
-
-      drawMolecules()
-      drawHelix(time)
-      frame = requestAnimationFrame(step)
-    }
-
-    // One static frame when the viewer asked for reduced motion.
-    function drawOnce() {
-      ctx.clearRect(0, 0, width, height)
-      drawMolecules()
-      drawHelix(0)
-    }
-
-    let frame = 0
+    let handle = 0
     resize()
     onScroll()
-    scroll = targetScroll
+    scrollNudge = target
     window.addEventListener('resize', resize)
     window.addEventListener('scroll', onScroll, { passive: true })
-
-    if (reduced) {
-      drawOnce()
-    } else {
-      frame = requestAnimationFrame(step)
-    }
+    handle = requestAnimationFrame(frame)
 
     return () => {
-      cancelAnimationFrame(frame)
+      cancelAnimationFrame(handle)
       window.removeEventListener('resize', resize)
       window.removeEventListener('scroll', onScroll)
     }
   }, [])
 
-  return <canvas id="backdrop" ref={ref} aria-hidden="true" />
+  return <canvas id="bg-canvas" ref={ref} aria-hidden="true" />
 }
