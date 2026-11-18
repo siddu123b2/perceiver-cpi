@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Protein Pocket Explorer</title><link rel="stylesheet" href="/style.css"><script src="/vendor/3Dmol-min.js"></script></head>
+<body>
+<header><div class="mark">P<span>·</span>L</div><div><p class="eyebrow">MOLECULAR WORKSPACE</p><h1>Protein Pocket Explorer</h1></div><span class="badge">LOCAL DATA · PDBbind</span></header>
+<main>
+<aside class="panel controls"><p class="eyebrow">01 / SELECT A COMPLEX</p><label for="pdb">PDB ID</label><div class="search"><input id="pdb" list="ids" value="10gs" maxlength="4" placeholder="e.g. 10gs"><datalist id="ids"></datalist><button id="load">Load</button></div><p id="inventory" class="muted">Reading processed structures…</p>
+<div id="details"><h2 id="complexTitle">—</h2><p id="affinity">—</p><p id="quality" class="muted"></p><div class="stats"><div><strong id="atoms">—</strong><span>ligand atoms</span></div><div><strong id="residues">—</strong><span>pocket residues</span></div></div></div>
+<hr><p class="eyebrow">02 / INSPECT THE POCKET</p>
+<label class="check"><input id="full" type="checkbox"> Full protein ribbon</label>
+<label class="check"><input id="surface" type="checkbox"> Pocket surface</label>
+<label class="check"><input id="contacts" type="checkbox" checked> Nearby atom contacts (≤ 4 Å)</label>
+<button id="reset" class="secondary">Focus on binding pocket</button><p class="muted">Drag to rotate · Scroll to zoom<br>Hover over pocket atoms to identify residues.</p>
+<hr><p class="eyebrow">03 / ILLUSTRATE AN APPROACH</p><button id="play" class="secondary">Play approach illustration</button><label for="position" class="range-label"><span>Separated</span><span>Bound pose</span></label><input id="position" type="range" min="0" max="100" value="100"><p class="notice">Illustration only. The ligand follows an artificial straight path. This is not a molecular dynamics simulation or a predicted binding route.</p>
+</aside>
+<section class="scene panel"><div class="scene-head"><span><i class="dot"></i> <span id="sceneTitle">Experimental bound structure</span></span><span class="muted">3D / Å</span></div><div id="molecule" aria-label="Interactive 3D protein ligand structure"></div><div id="status" role="status">Loading molecular viewer…</div><div class="legend"><span><i style="background:#ffcb72"></i> Compound</span><span><i style="background:#44c7c2"></i> Protein pocket</span><span><i style="background:#b6c7f7"></i> Distance contacts</span></div></section>
+<aside class="panel interactions"><p class="eyebrow">POCKET CONTACTS</p><h2>Close enough to meet</h2><p class="muted">Nearest ligand distance for each contacted residue in the bound structure. Distance alone does not prove a hydrogen bond or binding strength.</p><div id="contactState"></div><div id="contactList"></div><div class="footnote">Pocket: complete amino-acid residues within 6 Å of the ligand. Water, separate ions and cofactors are omitted from the pocket graph.</div><a id="download" href="#">Download this atom graph ↗</a></aside>
+</main><footer>Original coordinate frame preserved · Heavy atoms · Measured affinity types kept separate <span>Use original files for simulation preparation.</span></footer>
+<script src="/app.js"></script>
+</body></html>

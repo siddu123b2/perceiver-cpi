@@ -26,6 +26,8 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -33,8 +35,11 @@ sys.path.insert(0, str(ROOT / 'model_2d'))
 
 import predict_api                                        # noqa: E402
 from backend import advisor, structures                    # noqa: E402
+from backend.site_api import router as site_router         # noqa: E402
 
 DB_PATH = Path(__file__).resolve().parent / 'history.db'
+
+SITE = ROOT / 'site'
 
 @asynccontextmanager
 async def lifespan(_app):
@@ -226,6 +231,9 @@ def structure_coverage():
     return structures.stats()
 
 
+app.include_router(site_router)
+
+
 @app.post('/predict-3d', status_code=501, summary='3D binding pose — not built yet')
 def predict_3d(request: Predict3DRequest):
     """Deliberately not implemented. The 3D branch (structure prediction, docking, 3D viewer) is
@@ -238,3 +246,13 @@ def predict_3d(request: Predict3DRequest):
                 'planned_response': {'pdb': '<predicted complex structure, PDB format>',
                                      'docking_score': 'float',
                                      'pose_confidence': 'float'}})
+
+
+# Served last, on purpose. StaticFiles mounted at '/' matches every path, so anything registered
+# after it would be unreachable - every real route above must be defined first.
+if SITE.exists():
+    @app.get('/', include_in_schema=False)
+    def home():
+        return FileResponse(SITE / 'cpi.html')
+
+    app.mount('/', StaticFiles(directory=SITE, html=True), name='site')
