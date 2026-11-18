@@ -23,6 +23,7 @@ UPLOAD = HERE / 'kaggle_upload'
 OUT = UPLOAD / 'perceiver_cpi_data.zip'
 
 DATASETS = ['davis', 'metz', 'kiba']   # kiba is included now so it never needs re-uploading
+CV_DATASETS = ['davis', 'metz']        # folds 1-4 for the 5-fold cross-validation
 PARTS = ['train2', 'novelval', 'train3', 'randomval', 'test']
 SCRIPTS = ['run_experiment.py', 'train_quiet.py', 'evaluate.py',
            'protein_sensitivity.py', 'make_esm_bank.py', 'validation_preds.py',
@@ -49,6 +50,15 @@ def main():
             if not path.exists():
                 raise SystemExit(f'missing {path}. Run data/make_novel_val.py first.')
             files[f'data/splits/{dataset}/novel_pair/fold0_{part}.csv'] = path
+    # Step D needs folds 1-4 as well, for the 5-fold cross-validation. Only the datasets that
+    # actually get cross-validated, so KIBA's (much larger) folds stay out of the upload.
+    for dataset in CV_DATASETS:
+        for fold in (1, 2, 3, 4):
+            for part in ('train', 'val', 'test'):
+                path = SPLITS / dataset / 'novel_pair' / f'fold{fold}_{part}.csv'
+                if not path.exists():
+                    raise SystemExit(f'missing {path}. Run data/make_splits.py first.')
+                files[f'data/splits/{dataset}/novel_pair/fold{fold}_{part}.csv'] = path
 
     dirty = ' (with uncommitted changes)' if git('status', '--porcelain') else ''
     info = (f'Perceiver CPI, Phase 5 experiments\n'

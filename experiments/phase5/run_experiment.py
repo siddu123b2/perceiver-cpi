@@ -100,14 +100,44 @@ EXPERIMENTS = {
     'kiba_long_s1': {'dataset': 'kiba', 'train': 'train2', 'val': 'novelval', 'encoder': 'learned',
                      'seed': 1, 'epochs': 200, 'group': 'kiba',
                      'why': 'second seed, so the two can be averaged'},
+
+    # Step D: 5-fold cross-validation, so our headline numbers can be reported the way the paper
+    # reports its own (mean +/- std over 5 folds) instead of from a single fold.
+    # Fold 0 already exists - it is the Phase 4 baseline - so only folds 1-4 are run here, with
+    # exactly the Phase 4 settings: the standard fold{k}_train / fold{k}_val split, 150 epochs,
+    # one model, seed 0. Nothing else is varied, or the folds would not be comparable.
+    'davis_cv1': {'dataset': 'davis', 'train': 'train', 'val': 'val', 'fold': 1,
+                   'encoder': 'learned', 'seed': 0, 'epochs': 150, 'group': 'davis_cv',
+                   'why': 'fold 1 of the 5-fold cross-validation'},
+    'davis_cv2': {'dataset': 'davis', 'train': 'train', 'val': 'val', 'fold': 2,
+                   'encoder': 'learned', 'seed': 0, 'epochs': 150, 'group': 'davis_cv',
+                   'why': 'fold 2 of the 5-fold cross-validation'},
+    'davis_cv3': {'dataset': 'davis', 'train': 'train', 'val': 'val', 'fold': 3,
+                   'encoder': 'learned', 'seed': 0, 'epochs': 150, 'group': 'davis_cv',
+                   'why': 'fold 3 of the 5-fold cross-validation'},
+    'davis_cv4': {'dataset': 'davis', 'train': 'train', 'val': 'val', 'fold': 4,
+                   'encoder': 'learned', 'seed': 0, 'epochs': 150, 'group': 'davis_cv',
+                   'why': 'fold 4 of the 5-fold cross-validation'},
+    'metz_cv1': {'dataset': 'metz', 'train': 'train', 'val': 'val', 'fold': 1,
+                   'encoder': 'learned', 'seed': 0, 'epochs': 150, 'group': 'metz_cv',
+                   'why': 'fold 1 of the 5-fold cross-validation'},
+    'metz_cv2': {'dataset': 'metz', 'train': 'train', 'val': 'val', 'fold': 2,
+                   'encoder': 'learned', 'seed': 0, 'epochs': 150, 'group': 'metz_cv',
+                   'why': 'fold 2 of the 5-fold cross-validation'},
+    'metz_cv3': {'dataset': 'metz', 'train': 'train', 'val': 'val', 'fold': 3,
+                   'encoder': 'learned', 'seed': 0, 'epochs': 150, 'group': 'metz_cv',
+                   'why': 'fold 3 of the 5-fold cross-validation'},
+    'metz_cv4': {'dataset': 'metz', 'train': 'train', 'val': 'val', 'fold': 4,
+                   'encoder': 'learned', 'seed': 0, 'epochs': 150, 'group': 'metz_cv',
+                   'why': 'fold 4 of the 5-fold cross-validation'},
 }
 ESM_BANK = HERE / 'esm_bank_davis.npz'   # built by make_esm_bank.py
 
 # KIBA is left out on purpose: it is ~4x the cost of the other two. Run the winner on it afterwards.
 
 
-def split_file(dataset, part):
-    return SPLITS / dataset / 'novel_pair' / f'fold0_{part}.csv'
+def split_file(dataset, part, fold=0):
+    return SPLITS / dataset / 'novel_pair' / f'fold{fold}_{part}.csv'
 
 
 def data_workers():
@@ -125,10 +155,11 @@ def command(name, epochs=None):
     seed = str(spec['seed'])
     extra = ([] if spec['encoder'] == 'learned' else
              ['--protein_encoder', spec['encoder'], '--esm_bank', str(ESM_BANK)])
+    fold = spec.get('fold', 0)
     return [sys.executable, str(HERE / 'train_quiet.py'),
-            '--data_path', str(split_file(dataset, spec['train'])),
-            '--separate_val_path', str(split_file(dataset, spec['val'])),
-            '--separate_test_path', str(split_file(dataset, 'test')),
+            '--data_path', str(split_file(dataset, spec['train'], fold)),
+            '--separate_val_path', str(split_file(dataset, spec['val'], fold)),
+            '--separate_test_path', str(split_file(dataset, 'test', fold)),
             '--dataset_type', 'regression', '--target_columns', 'label', '--metric', 'mse',
             '--epochs', str(epochs), '--ensemble_size', '1', '--num_folds', '1',
             '--batch_size', '50', '--dropout', '0.1', '--aggregation', 'mean',
@@ -147,8 +178,9 @@ def option(flag, default):
 def main():
     if '--list' in sys.argv:
         for name, spec in EXPERIMENTS.items():
-            print(f'  {name:14s} group={spec["group"]:8s} encoder={spec["encoder"]:7s} '
-                  f'seed={spec["seed"]} epochs={spec["epochs"]:3d}  {spec["why"]}')
+            print(f'  {name:14s} group={spec["group"]:9s} fold={spec.get("fold", 0)} '
+                  f'encoder={spec["encoder"]:7s} seed={spec["seed"]} '
+                  f'epochs={spec["epochs"]:3d}  {spec["why"]}')
         return
 
     epochs = option('--epochs', 0) or None   # None = each experiment's own setting
@@ -168,9 +200,13 @@ def main():
         print('\nALL DONE. Next step: evaluate.py')
         return
 
-    missing = [str(p) for n in todo for p in
-               (split_file(EXPERIMENTS[n]['dataset'], EXPERIMENTS[n][k]) for k in ('train', 'val'))
-               if not p.exists()]
+    def needed(name):
+        spec = EXPERIMENTS[name]
+        fold = spec.get('fold', 0)
+        for part in (spec['train'], spec['val'], 'test'):   # 'test' is always that literal part
+            yield split_file(spec['dataset'], part, fold)
+
+    missing = [str(p) for n in todo for p in needed(n) if not p.exists()]
     if missing:
         sys.exit('STOP: these split files are missing. Run data/make_novel_val.py first:\n  ' +
                  '\n  '.join(missing))
