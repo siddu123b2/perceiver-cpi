@@ -318,6 +318,18 @@ Phase details from the spec:
   - **Backend:** FastAPI, `backend/app.py`. History is **SQLite** (`backend/history.db`, git-ignored), which CLAUDE.md allows for the basic version; MongoDB was not installed. 14 pytest tests cover health, the model list, a real prediction, determinism, scope warnings (including haemoglobin being flagged), six kinds of bad input, history, and the 3D placeholder returning 501.
   - **New dependencies installed:** fastapi, uvicorn, httpx, pytest (~20 MB total).
 
+- **Structure lookup (2026-11-18), from the user's `BindingDB_All.csv`.** Answers "what does this pair look like" **without predicting anything**, which also means without training anything.
+  - `data/build_structure_index.py` reads BindingDB (204,271 rows, 79% carrying a structure) and writes `data/structures/bindingdb_structures.json` (3.0 MB, committed). Compounds keyed by **InChIKey** so the same molecule written two ways still matches; proteins by exact sequence and by first-180-residue prefix.
+  - `backend/structures.py` returns one of four levels, best first: **exact_complex** (this compound in this protein has been crystallised), **same_target** (this protein solved with another ligand), **same_compound** (this compound solved against another protein), **none**.
+  - Endpoints `POST /structure` and `GET /structure/coverage`. Index holds 6,482 exact pairs, 1,474 compounds, 1,734 proteins.
+  - **Coverage measured on real Davis test pairs: 74% get a real structure** (57% same_target, 14% same_compound, 3% exact_complex, 26% none). Davis scope: 56% of proteins and 25% of compounds appear.
+  - Verified: erlotinib + EGFR -> `exact_complex`, PDB 1m17/4hjo/6dwn/9d5p, ligand code **AQ4**, so the viewer highlights the real erlotinib.
+  - **This is a lookup, never a prediction**, and the UI states which level it got, so a `same_target` hit is never passed off as the user's own complex.
+- **The 3D branch already exists, in the user's `Downloads/files/cpi3d-demo` (their project partner's work).** FastAPI plus a full pipeline: `structure.predict_structure` -> `pocket.detect_pockets` -> `ligand_prep` -> `docking.dock` (AutoDock Vina) -> PLIP interactions, with a job queue and reports. `run_pipeline(sequence, smiles)` takes **the same two inputs as our app**.
+  - Validated: `redocking_sample_5.csv` shows Vina redocking at 0.41 and 0.48 A RMSD on two of five cases, 11-76 s each. **Docking is physics, not machine learning - nothing is trained.**
+  - **It does not run on this laptop:** its `.venv` points at another machine's Python, and vina/obabel/fpocket are not installed here. Either the partner runs it as a service our frontend calls, or the Windows environment gets rebuilt (awkward; Vina and fpocket are Linux-oriented).
+  - Architecture agreed: **show the experiment when one exists (lookup), predict only when it does not (docking).**
+
 ## 7. Rules
 
 - Explain everything in simple words. The user must be able to explain every part in their viva.
