@@ -281,6 +281,21 @@ Phase details from the spec:
   - **The two `both` seeds disagree violently on validation protein rank (+0.123 and -0.037)**, which is the clearest evidence yet that this metric is very noisy at these sample sizes (10 validation compounds, 14 test compounds). Treat all protein-rank differences under ~0.1 as unresolved.
   - **The protein problem is still open.** ESM-2 alone remains the only thing that has moved it, at a cost of ~0.09 MSE.
   - Two bugs in `validation_preds.py` found and fixed here: it ignored `PERCEIVER_RUNS` (so Kaggle generated no validation predictions) and it patched the stored ESM bank path only for `esm`, not `both`.
+- **Phase 5 Step C sessions B and C results (2026-11-17). The under-training hypothesis is REJECTED for both Metz and KIBA.** Ran in parallel on Kaggle (a forked notebook), ~6.5 h each.
+
+  | Run | Test MSE | Best epoch | Protein rank | Previous best |
+  |---|---|---|---|---|
+  | `metz_long_s0` (400 ep) | 0.768 | 216 | +0.100 | Phase 4 Metz 0.762 |
+  | `metz_long_s1` (400 ep) | 0.721 | 136 | +0.055 | |
+  | **`metz_long` 2-seed ensemble** | **0.712** (CI 0.647) | - | +0.090 | |
+  | `kiba_long_s0` (200 ep) | 0.583 | **32** | +0.078 | Phase 4 KIBA 0.575 |
+
+  - **Training Metz nearly 3x longer bought nothing.** A single 400-epoch run (0.768) is no better than the 150-epoch baseline (0.762). The entire 0.762 -> 0.712 gain came from **averaging two seeds**, which we already knew was worth ~3-7%.
+  - **KIBA did not improve and its best epoch was 32 of 200.** It stops learning anything transferable almost immediately, and **remains worse than guessing the training average** (0.583 / 0.575 vs 0.553). This is the project's worst number and nothing has moved it.
+  - **Both new runs did improve protein ranking** (KIBA -0.067 -> +0.078; Metz ~+0.09). They used the novel-pair validation set, which may be the cause, but this metric is too noisy to claim it.
+  - **Registry updated:** Metz now serves the 2-seed Step C ensemble (pre-registered swap, honoured regardless of the score). KIBA keeps Phase 4, because the planned 2-seed ensemble does not exist - session D was never run (quota). Disclosed in `models/MODEL_SELECTION.md`.
+  - **Session D was deliberately skipped:** ~6 h needed against ~4.5 h of quota, and on the Metz evidence a second KIBA seed would be worth only a few percent against a 0.553 target it is already missing.
+  - Metz confidence cut-offs recalibrated on its new validation set (`novelval`): [0.169, 0.191]. All 14 backend tests still pass.
 - **Phase 5 ideas** (try one at a time, judge on validation only, log in `experiments/results_log.md`):
   - **Priority 1 (from Step 0): a novel-pair validation set.** Carve a second validation set out of the training rows that holds out whole compounds *and* whole proteins, mirroring how the test set is built, and use it to pick the epoch. Keep the paper-style validation as well, so the comparison with the paper stays honest. Cheap to build (reuses `make_splits.py`), and it changes what every later experiment optimises, so do it first.
   - **Note on "train longer":** validation MSE was still falling at epoch 150 on Davis and Metz, but that validation measures memorisation. Re-judge this idea on the novel-pair validation before spending GPU time; more epochs may simply memorise harder.

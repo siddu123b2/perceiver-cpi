@@ -32,22 +32,28 @@ SERVED = {
                 'to 0.622.',
     },
     'metz': {
-        'runs': [P4 / 'metz'],
-        'why': 'Phase 4 baseline, 150 epochs, single model',
+        'runs': [P5 / 'metz_long_s0', P5 / 'metz_long_s1'],
+        'why': 'Phase 5 Step C, 400 epochs, two seeds averaged',
         'unit': 'pKi',
-        'test_mse': 0.762, 'test_ci': 0.634,
-        'note': 'Phase 5 Step 1 trained two more Metz models, but they differ in how the '
-                'validation set was built rather than in quality, so choosing between them would '
-                'have meant choosing on the test score. Step C replaces this with a 400-epoch '
-                'two-seed ensemble.',
+        'test_mse': 0.712, 'test_ci': 0.647,
+        'note': 'This swap was decided before the runs happened, so it stands whatever the test '
+                'score said. It did improve things, 0.762 -> 0.712, but the gain came from '
+                'averaging the two seeds, not from the longer schedule: the single 400-epoch runs '
+                'scored 0.768 and 0.721 against the 150-epoch baseline 0.762. Training Metz nearly '
+                'three times as long bought nothing.',
     },
     'kiba': {
         'runs': [P4 / 'kiba'],
         'why': 'Phase 4 baseline, 150 epochs, single model',
         'unit': 'KIBA score',
         'test_mse': 0.575, 'test_ci': 0.565,
-        'note': 'Not retrained since Phase 4. Step C replaces this with a 200-epoch two-seed '
-                'ensemble.',
+        'note': 'Step C was to replace this with a 200-epoch two-seed ensemble, but only one of '
+                'the two seeds was run before the deadline, so the planned configuration does not '
+                'exist and the Phase 4 model stays. For disclosure, the single Step C run scores '
+                '0.583 against this model\'s 0.575, so the choice barely matters; it was made on '
+                'the pre-agreed rule (no complete ensemble, no swap), not on those numbers. That '
+                'run also stopped improving at epoch 32 of 200, which is the more interesting '
+                'result: KIBA learns almost nothing transferable after the first few epochs.',
     },
 }
 

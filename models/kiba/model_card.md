@@ -9,7 +9,7 @@ Phase 4 baseline, 150 epochs, single model. Source runs:
 
 - `experiments/phase4_baseline/runs/kiba` -> `model_0.pt`
 
-Not retrained since Phase 4. Step C replaces this with a 200-epoch two-seed ensemble.
+Step C was to replace this with a 200-epoch two-seed ensemble, but only one of the two seeds was run before the deadline, so the planned configuration does not exist and the Phase 4 model stays. For disclosure, the single Step C run scores 0.583 against this model's 0.575, so the choice barely matters; it was made on the pre-agreed rule (no complete ensemble, no swap), not on those numbers. That run also stopped improving at epoch 32 of 200, which is the more interesting result: KIBA learns almost nothing transferable after the first few epochs.
 
 ## How it was trained
 

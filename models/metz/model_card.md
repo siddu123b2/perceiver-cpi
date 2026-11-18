@@ -5,11 +5,12 @@
 
 ## Where it came from
 
-Phase 4 baseline, 150 epochs, single model. Source runs:
+Phase 5 Step C, 400 epochs, two seeds averaged. Source runs:
 
-- `experiments/phase4_baseline/runs/metz` -> `model_0.pt`
+- `experiments/phase5/runs/metz_long_s0` -> `model_0.pt`
+- `experiments/phase5/runs/metz_long_s1` -> `model_1.pt`
 
-Phase 5 Step 1 trained two more Metz models, but they differ in how the validation set was built rather than in quality, so choosing between them would have meant choosing on the test score. Step C replaces this with a 400-epoch two-seed ensemble.
+This swap was decided before the runs happened, so it stands whatever the test score said. It did improve things, 0.762 -> 0.712, but the gain came from averaging the two seeds, not from the longer schedule: the single 400-epoch runs scored 0.768 and 0.721 against the 150-epoch baseline 0.762. Training Metz nearly three times as long bought nothing.
 
 ## How it was trained
 
@@ -26,8 +27,8 @@ Phase 5 Step 1 trained two more Metz models, but they differ in how the validati
 
 | | This model | Paper (5-fold, ensemble of 3) | Always guess the training average |
 |---|---|---|---|
-| Test MSE | **0.762** | 0.658 | 0.910 |
-| Test CI | 0.634 | 0.675 | - |
+| Test MSE | **0.712** | 0.658 | 0.910 |
+| Test CI | 0.647 | 0.675 | - |
 
 **It is worse than the published paper.** We trained one fold instead of five and, for Metz and
 KIBA, a single model instead of an ensemble of three, and the paper's hyperparameters were tuned by

@@ -50,13 +50,13 @@
       "moderate": 6.0,
       "source": "No binarisation threshold is standard for Metz. We apply the same pharmacology convention as Davis: pKi 7 = 100 nM, pKi 6 = 1 uM. This is our assumption, not a published cut-off.",
       "confidence_cuts": [
-        0.1657,
-        0.1975
+        0.1692,
+        0.1908
       ],
       "confidence_calibration": {
-        "split": "fold0_val.csv",
+        "split": "fold0_novelval.csv",
         "rows": 800,
-        "of_rows": 4656,
+        "of_rows": 954,
         "mc_samples": 30,
         "seed": 0,
         "note": "Tertiles of the MC-dropout spread on the validation set. A relative label only - this is not a confidence interval."
@@ -72,17 +72,19 @@
       "basis": "10th percentile of each training entry's similarity to its nearest other training entry. Compounds: Tanimoto on Morgan r2 2048-bit fingerprints. Proteins: Jaccard overlap of 3-mers."
     },
     "checkpoints": [
-      "model_0.pt"
+      "model_0.pt",
+      "model_1.pt"
     ],
     "source_runs": [
-      "experiments/phase4_baseline/runs/metz"
+      "experiments/phase5/runs/metz_long_s0",
+      "experiments/phase5/runs/metz_long_s1"
     ],
-    "test_mse": 0.762,
-    "test_ci": 0.634,
+    "test_mse": 0.712,
+    "test_ci": 0.647,
     "paper_mse": 0.658,
     "paper_ci": 0.675,
     "guess_average_mse": 0.91,
-    "why": "Phase 4 baseline, 150 epochs, single model"
+    "why": "Phase 5 Step C, 400 epochs, two seeds averaged"
   },
   "kiba": {
     "unit": "KIBA score",

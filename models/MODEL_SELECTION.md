@@ -10,7 +10,7 @@ One model per dataset. Rebuild everything here with:
 | Dataset | Served by | Test MSE | Paper | Guess the average |
 |---|---|---|---|---|
 | Davis | `davis_base_s0` + `davis_base_s1`, averaged (Phase 5 Step B, 400 epochs) | **0.622** | 0.463 | 0.751 |
-| Metz | Phase 4 baseline, 150 epochs | **0.762** | 0.658 | 0.910 |
+| Metz | `metz_long_s0` + `metz_long_s1`, averaged (Phase 5 Step C, 400 epochs) | **0.712** | 0.658 | 0.910 |
 | KIBA | Phase 4 baseline, 150 epochs | **0.575** | 0.522 | 0.553 |
 
 ## How these were chosen
@@ -21,11 +21,15 @@ One model per dataset. Rebuild everything here with:
 - **Davis** gets the two 400-epoch Step B seeds, averaged. More epochs and an ensemble are
   improvements on the Phase 4 recipe *as a matter of method* - decided before looking at any test
   number. Averaging them was worth 0.643 -> 0.622.
-- **Metz** keeps the Phase 4 baseline. Phase 5 Step 1 produced two more Metz models (`metz_A`,
-  `metz_B`), but they differ in **how their validation set was built**, not in quality, and their
-  validation scores are therefore not comparable with each other. Choosing between them could only
-  have been done on the test score, so we did not choose: we kept the original.
-- **KIBA** keeps the Phase 4 baseline. Nothing has retrained it since.
+- **Metz** gets the two 400-epoch Step C seeds, averaged. This swap was decided before the runs
+  happened, so it stands whatever the test score said. It did help (0.762 -> 0.712) **but not for
+  the expected reason**: the single 400-epoch runs scored 0.768 and 0.721 against the 150-epoch
+  baseline's 0.762, so training nearly three times as long bought nothing. The whole gain came from
+  averaging two seeds.
+- **KIBA** keeps the Phase 4 baseline. Step C was to replace it with a 200-epoch two-seed ensemble,
+  but only one seed ran before the deadline, so the planned configuration does not exist and the
+  pre-agreed rule (no complete ensemble, no swap) applies. For disclosure, the single Step C run
+  scores 0.583 against 0.575, so the choice barely matters either way.
 
 **The ESM-2 models are deliberately not served.** Step B showed they read the protein better
 (within-compound protein ranking -0.00 -> +0.047) but are less accurate overall (test MSE
@@ -38,9 +42,13 @@ ranking, it replaces the Davis entry here.
 `SERVED` in `build_registry.py` is the single place to edit:
 
 - **Session A** (Davis, both encoders) replaces the Davis entry if it wins on validation.
-- **Sessions B/C/D** replace Metz and KIBA with 400/200-epoch two-seed ensembles. These are expected
-  to be clear improvements, because both currently sit far above even their compound-only ceilings
-  (Metz 0.762 against a ceiling of 0.332; KIBA 0.575 against 0.270).
+- **Sessions B and C ran on 2026-11-17 and largely did not deliver.** Metz improved 0.762 -> 0.712,
+  all of it from seed averaging. KIBA did not improve (0.583 vs 0.575) and **remains worse than
+  guessing the training average** (0.553). KIBA's best epoch was 32 of 200, so it stops learning
+  anything transferable almost immediately. Session D (the second KIBA seed) was not run: the GPU
+  quota did not cover it, and the Metz result suggests it would have been worth only a few percent.
+  The "both sit far above their compound-only ceilings, so this is under-training" hypothesis is
+  therefore **rejected** for both datasets.
 
 ## Band thresholds
 
@@ -77,7 +85,7 @@ spread over 800 rows of that model's own **validation** set, never the test set.
 | Dataset | high <= | low > | Range seen |
 |---|---|---|---|
 | Davis | 0.162 | 0.178 | 0.109 - 0.238 |
-| Metz | 0.166 | 0.198 | 0.102 - 0.406 |
+| Metz | 0.169 | 0.191 | 0.112 - 0.596 |
 | KIBA | 0.242 | 0.277 | 0.165 - 0.574 |
 
 **Read this label weakly.** The spread varies over a narrow range, and Phase 4 measured that it
