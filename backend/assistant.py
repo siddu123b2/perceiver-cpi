@@ -40,7 +40,8 @@ RULES, in order of importance:
    confidence interval and must never be described as one.
 5. Scores from different datasets are on different scales and must never be compared.
 
-STYLE: plain English, short paragraphs, no bullet lists unless comparing options, no preamble.
+STYLE: plain English, short paragraphs, no bullet lists unless comparing options, no
+preamble. Plain text only - no markdown, no LaTeX, no $pK_d$ notation; write pKd.
 Around 120 words unless asked for more. Explain terms a final-year student might not know."""
 
 
@@ -110,8 +111,12 @@ def ask(context, question=None):
             'this was the right model to use.')
     prompt = f'{SYSTEM}\n\nDATA (the only facts you may use):\n{_facts(context)}\n\nQUESTION: {task}'
 
+    # thinkingBudget 0: these models otherwise spend most of maxOutputTokens on internal
+    # reasoning, which truncated the visible answer to a single clause. The budget is also
+    # raised well above what the reply needs, so a little thinking cannot eat it again.
     payload = {'contents': [{'parts': [{'text': prompt}]}],
-               'generationConfig': {'temperature': 0.2, 'maxOutputTokens': 700}}
+               'generationConfig': {'temperature': 0.2, 'maxOutputTokens': 2048,
+                                    'thinkingConfig': {'thinkingBudget': 0}}}
     response = None
     last = 'no model answered'
     for name in MODELS:
