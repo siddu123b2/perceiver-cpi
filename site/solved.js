@@ -35,6 +35,7 @@ let solvedLigand = null;
 let solvedModel = null;
 let solvedShapes = [];
 let solvedSpinning = false;
+let lastAnswer = null;
 
 const set = (id, text) => { const node = el(id); if (node) node.textContent = text; };
 
@@ -224,21 +225,8 @@ el('predict').onclick = async () => {
     return;
   }
 
-  set('scoreResult', `${answer.score_label}: ${answer.score.toFixed(3)} — ${answer.band}`);
-  const measured = (answer.source_measurements || []).map((m) => m.original_score);
-  set('measurement', measured.length
-    ? `Measured in the source data: ${measured.join(', ')}`
-    : 'This pair is not in the source data, so there is no measured value to compare against.');
-  set('affinity', `${answer.score_label} ${answer.score.toFixed(3)} · ${answer.band}`
-    + (answer.confidence_label ? ` · ${answer.confidence_label} confidence` : ''));
-
-  const notes = [];
-  if (answer.truncated) {
-    notes.push(`The model reads the first ${answer.sequence_limit} residues; this protein has `
-      + `${answer.sequence_tokens}.`);
-  }
-  if (answer.advice?.summary) notes.push(answer.advice.summary);
-  set('queryStatus', notes.join(' '));
+  renderResult(answer);
+  lastAnswer = answer;
 
   const structure = answer.structure || {};
   if (structure.pdb_ids && structure.pdb_ids.length) {
@@ -251,3 +239,91 @@ el('predict').onclick = async () => {
     set('poseSource', structure.detail || '');
   }
 };
+
+
+/* ---------------------------------------------------------------- result panel
+ * The page originally showed one line of text. A score only means something next to its scale,
+ * so this lays out: the number, where it sits between the weak and strong thresholds for THIS
+ * dataset, what that means in words, and - when the pair is in the source data - the laboratory
+ * value to check it against.
+ */
+
+const BAND_WORDS = {
+  'strong binder': 'This is a strong binder. On this scale that means the compound is expected to '
+    + 'bind the protein tightly enough to be pharmacologically interesting.',
+  'moderate binder': 'This is a moderate binder. There is measurable affinity, but weaker than a '
+    + 'typical drug-like interaction for this target class.',
+  'weak binder': 'This is a weak binder. The model does not expect meaningful binding between '
+    + 'this compound and this protein.',
+};
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderResult(answer) {
+  const host = el('scoreResult');
+  if (!host) return;
+  const band = answer.band.split(' ')[0];
+  const strong = answer.bands?.strong ?? (answer.score_label === 'KIBA score' ? 12.1 : 7);
+  const moderate = answer.bands?.moderate ?? (answer.score_label === 'KIBA score' ? 11.1 : 6);
+  const span = (strong - moderate) * 3;
+  const low = moderate - span / 3;
+  const place = Math.max(1, Math.min(99, ((answer.score - low) / span) * 100));
+
+  const measured = (answer.source_measurements || []).map((m) => m.original_score);
+  const diff = measured.length ? Math.abs(answer.score - measured[0]) : null;
+
+  const parts = [];
+  parts.push(`<div class="cpi-result">
+    <div class="cpi-headline">
+      <span class="cpi-score">${answer.score.toFixed(2)}</span>
+      <span class="cpi-unit">${escapeHtml(answer.score_label)}</span>
+      <span class="cpi-band ${band}">${escapeHtml(answer.band)}</span>
+    </div>
+
+    <div class="cpi-scale">
+      <div class="cpi-track"><span class="cpi-pin ${band}" style="left:${place}%"></span></div>
+      <div class="cpi-ticks">
+        <span>weak</span><span>${moderate} moderate</span><span>${strong} strong</span>
+      </div>
+    </div>
+
+    <div class="cpi-plain">${escapeHtml(BAND_WORDS[answer.band] || '')}</div>`);
+
+  parts.push(`<div class="cpi-facts">
+      <div class="cpi-fact"><strong>${answer.confidence_label || '—'}</strong><span>confidence</span></div>
+      <div class="cpi-fact"><strong>${Math.round((answer.similarity_to_training?.compound ?? 0) * 100)}%</strong><span>compound seen</span></div>
+      <div class="cpi-fact"><strong>${Math.round((answer.similarity_to_training?.protein ?? 0) * 100)}%</strong><span>protein seen</span></div>
+      <div class="cpi-fact"><strong>${escapeHtml(answer.dataset.toUpperCase())}</strong><span>model used</span></div>
+    </div>`);
+
+  if (measured.length) {
+    parts.push(`<div class="cpi-check">
+      <b>Checked against the laboratory value.</b> This pair is in the source data, measured at
+      <b>${measured.join(', ')}</b> ${escapeHtml(answer.score_label)}. The model predicted
+      <b>${answer.score.toFixed(2)}</b> — a difference of <b>${diff.toFixed(2)}</b>.
+    </div>`);
+  } else {
+    parts.push(`<div class="cpi-check off">
+      This pair is not in the source data, so there is no measured value to check against. The
+      score is a genuine prediction.
+    </div>`);
+  }
+
+  if (answer.truncated) {
+    parts.push(`<div class="cpi-note">⚠<span>The model reads the first
+      <b>${answer.sequence_limit}</b> residues. This protein has <b>${answer.sequence_tokens}</b>,
+      so the rest is not seen. This is how the published model works.</span></div>`);
+  }
+  if (answer.advice?.summary) {
+    parts.push(`<div class="cpi-note">◆<span>${escapeHtml(answer.advice.summary)}</span></div>`);
+  }
+  parts.push('</div>');
+  host.innerHTML = parts.join('');
+
+  set('affinity', `${answer.score_label} ${answer.score.toFixed(2)} · ${answer.band}`);
+  set('measurement', '');
+  set('queryStatus', '');
+}

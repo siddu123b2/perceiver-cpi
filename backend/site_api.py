@@ -64,24 +64,38 @@ def measurements_for(name, smiles, sequence):
 
 @router.get('/pairs')
 def pairs(dataset: str = 'davis', q: str = '', matched: bool = False, offset: int = 0):
-    """Search the dataset. `matched` keeps only pairs we can show a real structure for."""
+    """Search the dataset. `matched` keeps only pairs we can show a real structure for.
+
+    A search looks through the WHOLE dataset, not a window of it - with 30k to 118k rows per
+    dataset, scanning a slice meant a specific compound would usually not be found. Only the
+    unfiltered browse is paged, since there is nothing to search for there.
+    """
     frame = table(dataset)
     if q:
         needle = q.strip()
         frame = frame[frame['smiles'].str.contains(needle, case=False, regex=False)
-                       | frame['sequence'].str.contains(needle.upper(), regex=False)]
+                       | frame['sequence'].str.upper().str.contains(needle.upper(), regex=False)]
+        total = len(frame)
+        frame = frame.iloc[offset:]
+    else:
+        total = len(frame)
+        frame = frame.iloc[offset:]
 
     found = []
-    for _, row in frame.iloc[offset:offset + PAGE * 4].iterrows():
-        hit = structures.find(row['smiles'], row['sequence'])
-        available = hit['level'] in ('exact_complex', 'same_target', 'same_compound')
-        if matched and not available:
-            continue
+    for _, row in frame.iterrows():
+        if matched:
+            hit = structures.find(row['smiles'], row['sequence'])
+            available = hit['level'] in ('exact_complex', 'same_target', 'same_compound')
+            if not available:
+                continue
+        else:
+            available = None            # not looked up: checking every row would be far too slow
         found.append({
             'id': row['id'],
             'smiles': row['smiles'],
             'sequence_preview': row['sequence'][:28] + '…',
             'pose_available': available,
+            'total_matches': total,
         })
         if len(found) >= PAGE:
             break
@@ -123,6 +137,8 @@ def predict(request: Query2D):
         'confidence': result['confidence'],
         'confidence_label': result['confidence_label'],
         'dataset': dataset,
+        'bands': {'strong': predict_api.registry()[dataset]['bands']['strong'],
+                  'moderate': predict_api.registry()[dataset]['bands']['moderate']},
         'source_measurements': measurements_for(dataset, request.smiles, sequence),
         'truncated': len(sequence) > SEQUENCE_LIMIT,
         'sequence_limit': SEQUENCE_LIMIT,
