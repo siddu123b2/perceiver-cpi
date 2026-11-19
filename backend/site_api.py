@@ -13,10 +13,12 @@ Field names and shapes are dictated by cpi.js and are not ours to choose: `score
 `source_measurements`, `sequence_limit` and so on are read directly by that file.
 """
 import hashlib
+import os
 import sys
 from functools import lru_cache
 from pathlib import Path
 
+import httpx
 import pandas as pd
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -30,6 +32,7 @@ from backend import advisor, assistant, structures  # noqa: E402
 router = APIRouter(prefix='/api')
 
 DATASETS = ('davis', 'kiba', 'metz')
+DOCKING_TIMEOUT = 900.0          # folding plus docking can take ten minutes
 SEQUENCE_LIMIT = 499                    # residues the model actually reads
 PAGE = 50
 
@@ -160,15 +163,59 @@ def predict(request: Query2D):
     }
 
 
+# Docking runs in the partner's service (AutoDock Vina, P2Rank, PLIP). Point this at it and the
+# job endpoints forward there; leave it unset and they say so honestly instead of faking a job.
+#   $env:PERCEIVER_DOCKING_URL = "http://192.168.1.42:8010"
+DOCKING_URL = os.environ.get('PERCEIVER_DOCKING_URL', '').rstrip('/')
+NOT_CONNECTED = ('Pose prediction by docking is not connected to this server. A solved '
+                 'experimental structure is shown instead when one exists. To connect it, set '
+                 'PERCEIVER_DOCKING_URL - see docs/3D_INTEGRATION.md.')
+
+
+def _forward(method, path, json_body=None):
+    """Pass a job request through to the docking service, unchanged."""
+    if not DOCKING_URL:
+        raise HTTPException(status_code=503, detail=NOT_CONNECTED)
+    try:
+        with httpx.Client(timeout=DOCKING_TIMEOUT) as client:
+            response = client.request(method, f'{DOCKING_URL}{path}', json=json_body)
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=f'The docking service at {DOCKING_URL} did not answer ({error}). Check it is '
+                   f'running with --host 0.0.0.0 and that both machines are on the same network.')
+    if response.status_code >= 400:
+        try:
+            detail = response.json().get('detail', response.text[:200])
+        except ValueError:
+            detail = response.text[:200]
+        raise HTTPException(status_code=response.status_code, detail=detail)
+    return response.json()
+
+
+@router.get('/docking/status')
+def docking_status():
+    """Is a docking service configured, and is it answering?"""
+    if not DOCKING_URL:
+        return {'connected': False, 'url': None, 'detail': NOT_CONNECTED}
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            ok = client.get(f'{DOCKING_URL}/api/complexes').status_code < 500
+        return {'connected': ok, 'url': DOCKING_URL,
+                'detail': 'Reachable.' if ok else 'Configured but returning errors.'}
+    except httpx.HTTPError as error:
+        return {'connected': False, 'url': DOCKING_URL, 'detail': f'Not reachable: {error}'}
+
+
 @router.post('/jobs')
 def jobs(request: Query2D):
-    """Docking. Not connected here - the pipeline lives in the partner's cpi3d-demo service, which
-    needs AutoDock Vina, OpenBabel and fpocket. Returning a clear 503 rather than a fake job keeps
-    the page honest about what it is showing."""
-    raise HTTPException(
-        status_code=503,
-        detail='Pose prediction by docking is not connected to this server. '
-               'A solved experimental structure is shown instead when one exists.')
+    """Start a docking job on the partner's service."""
+    return _forward('POST', '/api/jobs', request.model_dump())
+
+
+@router.get('/jobs/{job_id}')
+def job_status(job_id: str):
+    return _forward('GET', f'/api/jobs/{job_id}')
 
 
 @router.get('/coverage')

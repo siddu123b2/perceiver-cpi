@@ -110,6 +110,18 @@ Either way, extract `results_to_copy.zip` into `experiments\phase4_baseline\`. T
 
 For predictions with a ± (MC dropout), see [model_2d/mc_dropout.py](model_2d/mc_dropout.py).
 
+## The 3D binding pose
+
+Poses come from **AutoDock Vina**, which needs no trained model — it is a physics scoring function.
+Two routes, and the app uses whichever is available:
+
+1. **A solved structure, when one exists.** The app looks the pair up in BindingDB and shows the
+   real experimental complex. Works today, no extra software, covers 74% of Davis test pairs.
+2. **Docking, for everything else.** Runs in a separate service. Connect it with
+   `PERCEIVER_DOCKING_URL`; full instructions in **[docs/3D_INTEGRATION.md](docs/3D_INTEGRATION.md)**.
+
+Unset, the job endpoints say so plainly rather than faking a result.
+
 ## Running the app
 
 One command, one server — the interface, the API and the models together:
