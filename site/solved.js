@@ -327,3 +327,23 @@ function renderResult(answer) {
   set('measurement', '');
   set('queryStatus', '');
 }
+
+
+/* ---------------------------------------------------------------- example
+ * There is no pair list any more - the user types their own compound and protein. This fills in a
+ * real pair from the Davis test set so the interface can be tried in one click.
+ */
+el('useExample')?.addEventListener('click', () => {
+  el('smiles').value = 'C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1';
+  el('sequence').value =
+    'MRPSGTAGAALLALLAALCPASRALEEKKVCQGTSNKLTQLGTFEDHFLSLQRMFNNCEVVLGNLEITYVQRNYDLSFLKTIQEVAGY'
+    + 'VLIALNTVERIPLENLQIIRGNMYYENSYALAVLSNYDANKTGLKELPMRNLQEILHGAVRFSNNPALCNVESIQWRDIVSSDFLSNM'
+    + 'SMDFQNHLGSCQKCDPSCPNGSCWGAGEENCQKLTKIICAQQCSGRCRGKSPSDCCHNQCAAGCTGPRESDCLVCRKFRDEATCKDTC'
+    + 'PPLMLYNPTTYQMDVNPEGKYSFGATCVKKCPRNYVVTDHGSCVRACGADSYEMEEDGVRKCKKCEGPCRKVCNGIGIGEFKDSLSIN'
+    + 'ATNIKHFKNCTSISGDLHILPVAFRGDSFTHTPPLDPQELDILKTVKEITGFLLIQAWPENRTDLHAFENLEIIRGRTKQHGQFSLAV'
+    + 'VSLNITSLGLRSLKEISDGDVIISGNKNLCYANTINWKKLFGTSGQKTKIISNRGENSCKATGQVCHALCSPEGCWGPEPRDCVSCRN'
+    + 'VSRGRECVDKCNLLEGEPREFVENSECIQCHPECLPQAMNITCTGRGPDNCIQCAHYIDGPHCVKTCPAGVMGENNTLVWKYADAGHV'
+    + 'CHLCHPNCTYGCTGPGLEGCPTNGPKIPS';
+  el('dataset').value = 'davis';
+  set('queryStatus', 'Erlotinib and the EGFR kinase domain — a pair with a solved structure.');
+});
