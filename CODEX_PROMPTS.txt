@@ -1,0 +1,353 @@
+================================================================================
+ PROMPTS FOR CODEX — 3D BINDING POSE
+ Send ONE message at a time. Wait for the reply. Check it worked. Then the next.
+================================================================================
+
+HOW TO RUN THE WHOLE SYSTEM — pick one of three. Networking is NOT mandatory.
+
+  OPTION A — everything on the docking laptop            <<< RECOMMENDED, simplest
+    That laptop already has AutoDock Vina, P2Rank and the GPU.
+    It also clones the affinity app from:
+        https://github.com/siddu123b2/perceiver-cpi
+    Then runs BOTH programs on that one machine:
+        affinity app   -> port 8000
+        docking service-> port 8010
+    Nothing is networked. Nothing can fail on the day because of Wi-Fi.
+    ONE thing must be copied by hand: the trained model files. They are about
+    90 MB across five files and are deliberately not in git. Copy the whole
+    "models" folder from the affinity laptop into the same place in the clone.
+
+  OPTION B — two laptops talking over Wi-Fi
+    Only needed if the docking laptop cannot hold both. See MESSAGE 9.
+    Both machines must be on the same network and the firewall must allow it.
+
+  OPTION C — no docking service at all
+    The affinity app alone already shows the REAL solved experimental structure
+    for 74% of pairs, with pocket residues and contacts. It needs no docking,
+    no GPU and no second machine. This is a genuine fallback, not a broken one:
+    it is experimental data rather than a prediction, and it says so.
+
+Start with Option A. Keep Option C in your pocket for the demo.
+
+================================================================================
+ MESSAGE 1 — explain the project. Send this alone and wait for its answer.
+================================================================================
+
+I need your help with the 3D part of my final-year project. Before any code, read this and tell
+me back in your own words what the system does and what your job is. Do not write code yet.
+
+THE PROJECT
+A user types two things into a web page:
+  - a compound, as a SMILES string
+  - a protein, as an amino-acid sequence
+They get back two things:
+  1. a binding affinity score - how strongly that compound binds that protein
+  2. a 3D picture - where the compound sits inside the protein, and which amino acids it touches
+
+TWO SEPARATE PROGRAMS
+This is split into two programs that talk over HTTP. They may run on one machine or two.
+
+  PROGRAM A - the affinity app. Finished. You will not touch it.
+    Runs trained Perceiver CPI models and produces the affinity score.
+    Serves the web page the user looks at.
+    Also has a lookup that finds whether a real solved 3D structure of that pair already exists.
+
+  PROGRAM B - the docking service. This is your job.
+    Turns the same SMILES + sequence into a 3D pose, plus the contacting residues.
+    It already exists here and partly works. It uses ESMFold, P2Rank, AutoDock Vina and PLIP.
+
+SIX FACTS YOU MUST NOT GET WRONG
+These have already cost this project days. Do not argue with them or work around them.
+
+1. The 3D pose is NOT produced by a trained model. AutoDock Vina produces it from physics and a
+   scoring function - it tries positions and scores them. There is nothing to learn. Ever.
+2. Do not train anything. Not for poses, not for pockets, not for contacts.
+3. Someone previously trained a "conditioned 3D" model on ONE complex for 80 epochs as a code
+   check. It has no validation data, it is blocked from serving, and it must stay blocked.
+   Do not use it, extend it, or train a replacement.
+4. The affinity models are already trained and belong to Program A. Never retrain them, never
+   write your own scorer.
+5. Vina runs on CPU. The pose does not need the GPU.
+6. Pockets and contacts need no training either - P2Rank ships pretrained, PLIP is pure geometry.
+
+THE PROBLEM I NEED SOLVED
+Right now one job takes about 9 minutes 47 seconds:
+  - ESMFold predicting the protein's 3D shape:  5 min 54 s
+  - P2Rank finding pockets:                        6 s
+  - Ligand preparation and Vina docking:        3 min 47 s
+And many jobs fail outright, at three different stages.
+
+MY TWO GOALS
+  A. A pose is produced for ANY compound and ANY protein the user types. No silent failures.
+  B. Under 4 minutes when the protein already has a known structure.
+
+HOW WE WILL WORK
+I will give you ONE task at a time. For each one, tell me:
+  1. what you changed, in plain words
+  2. the exact command I can run to check it myself
+  3. the before/after timing, if the task has one
+Never do more than the task I gave you.
+
+Now: tell me back what this system does and what your role is. Then wait.
+
+================================================================================
+ MESSAGE 2 — find out what is actually there
+================================================================================
+
+Task 1. Explore this project and report. Change nothing.
+
+Tell me:
+1. Which file contains the main pipeline that turns a SMILES + sequence into a pose, and what the
+   entry function is called.
+2. The stages that function runs, in order.
+3. For each of these four tools - AutoDock Vina, P2Rank, Open Babel, PLIP - where the code expects
+   to find it, and whether that is hardcoded, an environment variable, or found on PATH.
+4. Where finished job results and failed job errors are stored.
+5. Whether a working Python environment exists here, and which of rdkit, biopython, vina and plip
+   import successfully.
+
+Give me a short report. Do not change any file.
+
+================================================================================
+ MESSAGE 3 — get the real error
+================================================================================
+
+Task 2. I need to see the real failure, not a wrapped one.
+
+Write a standalone script in the project root called try_one.py that calls the main pipeline
+function directly - not through the web server - on one hardcoded test pair:
+
+  smiles = "C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1"
+
+  sequence = "MRPSGTAGAALLALLAALCPASRALEEKKVCQGTSNKLTQLGTFEDHFLSLQRMFNNCEVVLGNLEITYVQRNYDLSFL
+  KTIQEVAGYVLIALNTVERIPLENLQIIRGNMYYENSYALAVLSNYDANKTGLKELPMRNLQEILHGAVRFSNNPALCNVESIQWRDIVSS
+  DFLSNMSMDFQNHLGSCQKCDPSCPNGSCWGAGEENCQKLTKIICAQQCSGRCRGKSPSDCCHNQCAAGCTGPRESDCLVCRKFRDEATCK
+  DTCPPLMLYNPTTYQMDVNPEGKYSFGATCVKKCPRNYVVTDHGSCVRACGADSYEMEEDGVRKCKKCEGPCRKVCNGIGIGEFKDSLSIN
+  ATNIKHFKNCTSISGDLHILPVAFRGDSFTHTPPLDPQELDILKTVKEITGFLLIQAWPENRTDLHAFENLEIIRGRTKQHGQFSLAVVSL
+  NITSLGLRSLKEISDGDVIISGNKNLCYANTINWKKLFGTSGQKTKIISNRGENSCKATGQVCHALCSPEGCWGPEPRDCVSCRNVSRGRE
+  CVDKCNLLEGEPREFVENSECIQCHPECLPQAMNITCTGRGPDNCIQCAHYIDGPHCVKTCPAGVMGENNTLVWKYADAGHVCHLCHPNCT
+  YGCTGPGLEGCPTNGPKIPS"
+
+  (join those lines into one string with no spaces or line breaks)
+
+Requirements:
+ - print a timestamped line immediately before and after EVERY stage, naming the stage
+ - do NOT catch exceptions anywhere - let it crash with the full traceback
+ - write all output to try_one.log as well as the screen
+
+Run it. Show me the complete output including any traceback.
+
+--- then run it yourself as well, so you see it with your own eyes ---
+
+================================================================================
+ MESSAGE 4 — fix what it showed. Repeat until a pose appears.
+================================================================================
+
+try_one.py failed during the [NAME THE STAGE] stage. Here is the full traceback:
+
+[paste everything]
+
+Fix the underlying cause. Rules:
+ - do NOT wrap it in try/except to make the error go away
+ - do NOT train or load any machine-learning model to work around it
+ - if a tool is missing or misconfigured, tell me the exact install command instead of
+   coding around it
+
+Then run try_one.py again and show me the output.
+
+--- the three failures already seen on this machine ---
+  ESMFold stage          : the model does not fit the laptop GPU's memory, so weights swap to
+                           disk. MESSAGE 6 removes this step for most proteins.
+  Receptor preparation   : the structure has several chains, alternate atom positions, or
+                           missing atoms.
+  Pose validation        : docking ran, but the search box was centred on the wrong pocket.
+
+================================================================================
+ MESSAGE 5 — make ANY input work.  <<< THIS IS GOAL A
+================================================================================
+
+Task 4. A pose must be produced for ANY compound and ANY protein a user types. Right now some
+inputs fail. Make the pipeline handle all of these, and tell me what you changed for each:
+
+INPUT CLEANING, before anything else runs:
+ - sequence: strip whitespace, newlines and digits; uppercase it; if it starts with ">" treat it
+   as FASTA and drop that first line
+ - reject with a clear message: a sequence under 20 residues, or one containing letters that are
+   not amino acids
+ - reject a SMILES that RDKit cannot parse, and say so plainly
+ - a protein longer than the model's limit must still work - truncate it and SAY you truncated
+
+RECEPTOR PREPARATION, which must be deterministic:
+ - keep ONE chain only - the chain the ligand touches if there is one, otherwise the first
+ - remove all waters
+ - remove heteroatoms EXCEPT the ligand of interest
+ - where atoms have alternate locations, keep conformer A only
+ - if required atoms are still missing, fail with a message naming exactly what was missing
+
+HOW TO IDENTIFY THE LIGAND - important:
+ Never hardcode a three-letter ligand code. Count atoms per hetero residue, discard this list:
+   HOH WAT DOD NAG BMA MAN FUC GAL NDG SIA CA MG ZN NA CL K FE MN CU SO4 PO4 GOL EDO ACT DMS
+   PEG MES TRS IOD BR NO3 ACY FMT
+ and take the largest remaining residue that has at least 6 atoms. After docking, the ligand's
+ residue name is whatever the pipeline produced, so a fixed code will break.
+
+Then write test_inputs.py that runs the pipeline over these cases and prints a pass/fail table:
+ 1. a normal kinase inhibitor and a normal kinase
+ 2. a protein sequence pasted in FASTA format with the ">" header line
+ 3. a sequence containing lowercase letters and line breaks
+ 4. a protein longer than 1000 residues
+ 5. a very small molecule: CCO
+ 6. an invalid SMILES: "not a molecule"   (must fail cleanly with a clear message, not crash)
+ 7. a sequence with an invalid character: "MKKF123XYZ"   (same)
+
+Run it and show me the table.
+
+SUCCESS: cases 1 to 5 produce a pose. Cases 6 and 7 fail with a clear message, not a crash.
+
+================================================================================
+ MESSAGE 6 — make it fast.  <<< THIS IS GOAL B
+================================================================================
+
+Task 5. ESMFold is 5 min 54 s of a 9 min 47 s job, and it is also the step most jobs fail in.
+For most real proteins it is unnecessary, because the structure has already been solved
+experimentally. Program A can tell us.
+
+Write a module that asks it. One function:
+
+    find(smiles, sequence) -> dict or None
+
+It POSTs to  {PERCEIVER_APP_URL}/structure  with  {"smiles": ..., "sequence": ...}
+PERCEIVER_APP_URL is an environment variable, default http://127.0.0.1:8000
+
+The reply looks like:
+  {"level": "exact_complex" | "same_target" | "same_compound" | "none",
+   "pdb_ids": ["1m17", "4hjo"],
+   "ligand_code": "AQ4"}
+
+If level is "exact_complex" or "same_target":
+   download the FIRST pdb id from  https://files.rcsb.org/download/<ID>.pdb
+   return {"pdb_path": ..., "pdb_id": ..., "ligand_code": ...}
+Otherwise return None.
+
+Timeout after 10 seconds. If ANYTHING goes wrong - unreachable, bad reply, download failed - log
+a warning and return None. This must never crash the pipeline, and the pipeline must never
+require Program A to be running.
+
+Now wire it into the main pipeline, BEFORE the structure prediction stage:
+  - if it returns a structure: use that PDB as the receptor, SKIP ESMFold entirely, and centre
+    the Vina search box on the ligand already present in that structure so P2Rank is skipped too.
+    Record "receptor_source": "experimental" and the pdb id in the result.
+  - if it returns None: run ESMFold and P2Rank exactly as now.
+    Record "receptor_source": "predicted".
+
+Run try_one.py and show me the timing of every stage.
+
+SUCCESS: that pair finishes in roughly the Vina time alone - under 4 minutes - and the log says
+it used an experimental structure.
+
+================================================================================
+ MESSAGE 7 — never repeat work
+================================================================================
+
+Task 6. Testing ten compounds against one protein currently folds that protein ten times.
+
+Add a disk cache for prepared receptors. The key is sha256 of the sequence, uppercased with all
+whitespace removed - not a name or an id. Cache the prepared receptor AND the pocket result,
+since both depend only on the protein. On a hit, log "receptor cache hit" and reuse it.
+Add a --no-cache flag to force a rebuild.
+
+Then run try_one.py twice with the SAME protein but different compounds - change the second
+SMILES to CC(=O)Oc1ccccc1C(=O)O - and show me both timings.
+
+================================================================================
+ MESSAGE 8 — explain the pose
+================================================================================
+
+Task 7. A pose on its own explains nothing. After docking, run PLIP on the final complex and add
+to the result:
+
+  "contacts": [
+    {"residue": "THR790", "chain": "A", "type": "hydrogen bond", "distance": 3.1},
+    {"residue": "LYS745", "chain": "A", "type": "salt bridge",   "distance": 2.8}
+  ]
+
+Use PLIP's own interaction types - hydrogen bond, salt bridge, hydrophobic, pi-stacking. Do NOT
+write your own distance rule and label the result a hydrogen bond; PLIP applies angle and
+geometry criteria that a distance check does not.
+
+If PLIP is not installed, give me the exact install command rather than writing a substitute.
+
+Test it on PDB 1m17, which is EGFR with erlotinib, and show me the contacts.
+
+================================================================================
+ MESSAGE 9 — only if you are using TWO laptops (Option B). Skip for Option A.
+================================================================================
+
+Run these yourself on the docking laptop, in the project folder:
+
+    .venv\Scripts\python.exe -m uvicorn backend.app:app --host 0.0.0.0 --port 8010
+
+  --host 0.0.0.0 is essential. Without it, only that laptop can reach the service.
+  When Windows Firewall asks, choose "Allow on private networks".
+
+In a second window:
+
+    ipconfig          -> note the IPv4 Address, for example 192.168.1.42
+
+Then on the affinity laptop, BEFORE starting its app:
+
+    $env:PERCEIVER_DOCKING_URL = "http://192.168.1.42:8010"
+    .venv\Scripts\python.exe -m uvicorn backend.app:app --port 8000
+
+Check the link:
+
+    curl http://127.0.0.1:8000/api/docking/status      -> should say "connected": true
+
+If it does not: from the affinity laptop try
+    curl http://192.168.1.42:8010/api/complexes
+If THAT also fails, the problem is the firewall or the network, not the code.
+
+FOR OPTION A (one laptop) you do none of this. Just start both:
+    window 1:  uvicorn backend.app:app --port 8000      (the affinity app)
+    window 2:  uvicorn backend.app:app --port 8010      (the docking service)
+    and set     $env:PERCEIVER_DOCKING_URL = "http://127.0.0.1:8010"
+
+================================================================================
+ MESSAGE 10 — prove it works.  THIS TABLE IS THE DELIVERABLE.
+================================================================================
+
+Task 8. Run five varied pairs through the complete pipeline and write the results to a file
+called E2E.md. Include at least:
+  - one pair that has a solved structure (the fast route)
+  - one that has none (the folding route)
+  - one protein longer than 800 residues
+  - one compound that is not a typical kinase inhibitor
+
+For each: the pair, which receptor route was used, the time for each stage, whether a pose was
+produced, how many contacts were found, and any failure with the stage it happened at.
+
+Run them for real and fill in the actual numbers.
+
+================================================================================
+ IF CODEX DRIFTS — paste this
+================================================================================
+
+Reminders:
+- The pose comes from AutoDock Vina. It is physics, not machine learning. Do not train anything.
+- Do not use or extend the conditioned 3D model trained on one complex. It stays blocked.
+- The affinity models belong to Program A. Never retrain or replace them.
+- Do not hide an error with try/except. Every failure must name its stage and reason.
+- Do not fake a pose. If none was produced, say so.
+- Do not change the API: POST /api/jobs, GET /api/jobs/{id}, GET /api/jobs/{id}/files/{name}.
+Do only the task I gave you, nothing more.
+
+================================================================================
+ ORDER OF IMPORTANCE, if time runs short
+================================================================================
+
+  MESSAGE 5  - any input produces a pose          <- goal A, do this first
+  MESSAGE 6  - skip folding, under 4 minutes      <- goal B, do this second
+  MESSAGE 10 - the results table                  <- this is what gets marked
+  everything else is useful but not essential
+
+================================================================================

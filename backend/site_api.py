@@ -133,6 +133,20 @@ def predict(request: Query2D):
         result = predict_api.predict(request.smiles, request.sequence, dataset)
     except predict_api.InvalidInput as error:
         raise HTTPException(status_code=422, detail=str(error))
+    except FileNotFoundError as error:
+        # The usual cause: the trained weights were never copied in, or landed in the wrong
+        # folder. Without this the browser gets a bare 500 and shows "Internal Server Error",
+        # which tells the user nothing.
+        raise HTTPException(
+            status_code=503,
+            detail=f'The {dataset} model files are missing: {error}. The weights are not in the '
+                   f'git repository - copy the models folder in so the files sit at '
+                   f'models/{dataset}/model_0.pt, then restart the server. '
+                   f'Run: python check_setup.py')
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f'The prediction failed: {type(error).__name__}: {error}')
 
     sequence = ''.join(request.sequence.split())
     structure = structures.find(request.smiles, sequence)
