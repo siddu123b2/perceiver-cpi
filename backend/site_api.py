@@ -25,13 +25,18 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'model_2d'))
 
 import predict_api                      # noqa: E402
-from backend import advisor, structures  # noqa: E402
+from backend import advisor, assistant, structures  # noqa: E402
 
 router = APIRouter(prefix='/api')
 
 DATASETS = ('davis', 'kiba', 'metz')
 SEQUENCE_LIMIT = 499                    # residues the model actually reads
 PAGE = 50
+
+
+class AssistRequest(BaseModel):
+    context: dict = {}
+    question: str = ''
 
 
 class Query2D(BaseModel):
@@ -177,3 +182,14 @@ def coverage():
         'structures': stats,
         'datasets': {name: int(len(table(name))) for name in DATASETS},
     }
+
+
+@router.post('/assist')
+def assist(request: AssistRequest):
+    """Explain a result, or answer a question about it. Grounded - see backend/assistant.py."""
+    return assistant.ask(request.context, request.question)
+
+
+@router.get('/assist/status')
+def assist_status():
+    return {'available': assistant.available(), 'model': assistant.MODEL}

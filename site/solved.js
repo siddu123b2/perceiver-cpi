@@ -347,3 +347,83 @@ el('useExample')?.addEventListener('click', () => {
   el('dataset').value = 'davis';
   set('queryStatus', 'Erlotinib and the EGFR kinase domain — a pair with a solved structure.');
 });
+
+
+/* ---------------------------------------------------------------- assistant
+ * The Assist panel. It is given only what this app computed - never free rein - so it cannot
+ * invent residues, energies or pockets. See backend/assistant.py for the exact restriction.
+ */
+
+const SUGGESTIONS = [
+  'Which model should I use for this pair?',
+  'Is this compound binding or not?',
+  'How much should I trust this number?',
+  'What do the pocket residues tell me?',
+];
+
+function assistContext() {
+  const context = Object.assign({}, lastAnswer || {});
+  // contacts come from the structure currently on screen, measured not guessed
+  if (solvedLigand && solvedModel) {
+    context.contacts = solvedContacts().slice(0, 10).map((c) => ({
+      residue: `${c.p.resn}${c.p.resi} ${c.p.atom}`,
+      distance: Number(c.d.toFixed(2)),
+    }));
+  }
+  return context;
+}
+
+async function runAssist(question) {
+  const answer = el('assistAnswer');
+  const button = el('assistButton');
+  if (!lastAnswer) {
+    answer.textContent = 'Run a prediction first, then Assist can explain it.';
+    return;
+  }
+  button.disabled = true;
+  answer.textContent = 'Thinking…';
+  try {
+    const reply = await api('/api/assist', { context: assistContext(), question: question || '' });
+    answer.textContent = reply.answer;
+  } catch (error) {
+    answer.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+(function buildAssist() {
+  const host = el('pair-workbench');
+  if (!host) return;
+  const box = document.createElement('div');
+  box.className = 'cpi-ask';
+  box.innerHTML = `
+    <div class="cpi-ask-row">
+      <button type="button" id="assistButton">Assist</button>
+      <input id="assistQuestion" placeholder="Ask about this result…">
+    </div>
+    <div class="cpi-chips" id="assistChips"></div>
+    <div class="cpi-ask-answer" id="assistAnswer"></div>`;
+  host.appendChild(box);
+
+  for (const text of SUGGESTIONS) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'cpi-chip';
+    chip.textContent = text;
+    chip.onclick = () => { el('assistQuestion').value = text; runAssist(text); };
+    el('assistChips').appendChild(chip);
+  }
+
+  el('assistButton').onclick = () => runAssist(el('assistQuestion').value);
+  el('assistQuestion').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') { event.preventDefault(); runAssist(el('assistQuestion').value); }
+  });
+
+  api('/api/assist/status').then((s) => {
+    if (!s.available) {
+      el('assistAnswer').textContent =
+        'Assist is not configured on the server. Set GEMINI_API_KEY and restart it.';
+    }
+  }).catch(() => {});
+})();
