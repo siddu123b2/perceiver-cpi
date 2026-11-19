@@ -5,6 +5,10 @@
 
 ---
 
+> **Working with a coding agent?** [docs/CODEX_PROMPT.md](CODEX_PROMPT.md) is a complete prompt
+> covering everything in this document as ordered tasks, each with a way to verify it worked.
+> Paste it whole.
+
 ## 1. What is trained and what is not
 
 This is the point that causes the most confusion, so it is worth being blunt.
